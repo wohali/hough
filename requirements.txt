@@ -9,7 +9,7 @@ numpy==1.18.1
 olefile==0.46
 Pillow==4.3.0
 pkg-resources==0.0.0
-pyparsing==2.2.0
+pyparsing==2.4.6
 python-dateutil==2.7.2
 pytz==2018.4
 PyWavelets==0.5.2
