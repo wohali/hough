@@ -22,9 +22,13 @@ For now, you'll need to install [Poetry](https://python-poetry.org/docs/#install
 then run:
 
 ```
+poetry run pip install -U pip setuptools
 poetry install
 poetry shell
 ```
+
+The first line is required to update `pip` to a new enough version to be compatible with
+`manylinux` wheel packaging, required for PyMuPDF.
 
 ## Usage
 
