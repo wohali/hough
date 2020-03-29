@@ -16,9 +16,11 @@ from skimage.feature import canny
 from skimage.filters import threshold_otsu
 from skimage.morphology import binary_dilation
 from skimage.transform import probabilistic_hough_line, rescale
-from skimage.util import crop, invert
+from skimage.util import crop, img_as_ubyte, invert
 
 import hough
+
+from . import log_utils
 
 
 # numpy's little helpers
@@ -93,16 +95,13 @@ def hough_angles(pos, neg, orientation="row"):
     return (angles, sums[line], edges_grey)
 
 
-def _init_worker(q, args):
-    # Ignore CTRL+C in the workers, see http://jessenoller.com/blog/2009/01/08/multiprocessingpool-and-keyboardinterrupt
+def _init_worker(queue, debug_arg, now_arg):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    qh = logging.handlers.QueueHandler(q)
-    root = logging.getLogger()
-    root.addHandler(qh)
+    log_utils.setup_queue_logging(queue)
     # this is a global only within the multiprocessing Pool workers, not in the main process.
     global debug, now
-    debug = args.debug
-    now = args.now
+    debug = debug_arg
+    now = now_arg
 
 
 def get_pages(f):
@@ -110,6 +109,8 @@ def get_pages(f):
         [(filename, "mime/type", pagenum), ... ]
     """
     kind = filetype.guess(f)
+    if not kind:
+        return [(f, None, None)]
     if kind.mime == "application/pdf":
         pdf = fitz.open(f)
         return [(f, kind.mime, x) for x in range(len(pdf))]
@@ -121,16 +122,17 @@ def get_pages(f):
 
 def process_page(tuple):
     f, mimetype, page = tuple
-    logger = logging.getLogger("worker_hough")
+    logger = logging.getLogger("hough")
     if page is None:
         # not a known multi-image file
         try:
             image = imread(f)
+            logger.info(f"Processing {f}...")
             return [process_image(f, image, logger)]
         except ValueError as e:
-            logger.error(f"Skipping {f}: {e}")
-            return []
-    elif mimetype == "application/pdf":
+            # Fall through; might be multi-page anyway...
+            logger.debug(f"Single-page read of {f} failed: {e}")
+    if mimetype == "application/pdf":
         results = []
         doc = fitz.open(f)
         imagelist = doc.getPageImageList(page)
@@ -154,11 +156,10 @@ def process_page(tuple):
         # TODO: support multi-image TIFF with
         #   https://imageio.readthedocs.io/en/stable/userapi.html#imageio.mimread
         logger.error(f"Cannot process {f}: unknown file format")
+        return []
 
 
 def process_file(f):
-    logger = logging.getLogger("worker_hough")
-    logger.info(f"Processing {f}")
     results = []
     for page in get_pages(f):
         results += process_page(page)
@@ -200,17 +201,29 @@ def process_image(f, page, logger, pagenum=None):
     if h_angles and v_sums_row > h_sums_col:
         angle = np.median(h_angles)
         if debug:
-            imwrite(f"out/{now}/{filename}_{pagenum}_{angle}_hlines.png", h_edges_grey)
+            imwrite(
+                f"debug/{now}/{filename}_{pagenum}_{angle}_hlines.png",
+                img_as_ubyte(h_edges_grey),
+            )
         logger.debug(f"{filename} p{pagenum} Hough H angle: {angle} deg (median)")
     elif v_angles:
         angle = np.median(v_angles)
         if debug:
-            imwrite(f"out/{now}/{filename}_{pagenum}_{angle}_vlines.png", v_edges_grey)
+            imwrite(
+                f"debug/{now}/{filename}_{pagenum}_{angle}_vlines.png",
+                img_as_ubyte(v_edges_grey),
+            )
         logger.debug(f"{filename} p{pagenum} Hough V angle: {angle} deg (median)")
     else:
         if debug:
-            imwrite(f"out/{now}/{filename}_{pagenum}_no_hlines.png", h_edges_grey)
-            imwrite(f"out/{now}/{filename}_{pagenum}_no_vlines.png", v_edges_grey)
+            imwrite(
+                f"debug/{now}/{filename}_{pagenum}_no_hlines.png",
+                img_as_ubyte(h_edges_grey),
+            )
+            imwrite(
+                f"debug/{now}/{filename}_{pagenum}_no_vlines.png",
+                img_as_ubyte(v_edges_grey),
+            )
         logger.debug(f"{filename} p{pagenum} failed peak sum Hough H/V")
 
         # We didn't find a good feature at the H or V sum peaks.
@@ -247,12 +260,12 @@ def process_image(f, page, logger, pagenum=None):
             angle = np.mean(angles)
             if debug:
                 imwrite(
-                    f"out/{now}/{filename}_{pagenum}_{angle}_lines_vertical.png",
-                    edges_grey,
+                    f"debug/{now}/{filename}_{pagenum}_{angle}_lines_vertical.png",
+                    img_as_ubyte(edges_grey),
                 )
                 imwrite(
-                    f"out/{now}/{filename}_{pagenum}_{angle}_lines_verticaldilated.png",
-                    bool_to_255f(dilated),
+                    f"debug/{now}/{filename}_{pagenum}_{angle}_lines_verticaldilated.png",
+                    bool_to_255f(img_as_ubyte(dilated)),
                 )
             logger.debug(
                 f"{filename} p{pagenum} Hough angle V: {angle} deg (mean)  {np.median(angles)} deg (median)"
@@ -261,14 +274,16 @@ def process_image(f, page, logger, pagenum=None):
             angle = None
             if debug:
                 imwrite(
-                    f"out/{now}/{filename}_{pagenum}_dilated.png", bool_to_255f(dilated)
+                    f"debug/{now}/{filename}_{pagenum}_dilated.png",
+                    bool_to_255f(img_as_ubyte(dilated)),
                 )
                 imwrite(
-                    f"out/{now}/{filename}_{pagenum}_dilate_edges_grey.png", edges_grey
+                    f"debug/{now}/{filename}_{pagenum}_dilate_edges_grey.png",
+                    img_as_ubyte(edges_grey),
                 )
                 imwrite(
-                    f"out/{now}/{filename}_{pagenum}_dilate_edges.png",
-                    bool_to_255f(edges),
+                    f"debug/{now}/{filename}_{pagenum}_dilate_edges.png",
+                    bool_to_255f(img_as_ubyte(edges)),
                 )
             logger.debug(f"{filename} p{pagenum} failed dilated Hough V")
 
