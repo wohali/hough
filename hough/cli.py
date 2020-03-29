@@ -67,9 +67,7 @@ def _logger_thread(q):
         if record is None:
             break
         # this avoids double-logging
-        if record.name == "worker_csv":
-            record.name = "csv"
-        elif record.name == "worker_hough":
+        if record.name == "worker_hough":
             record.name = "hough"
         logger = logging.getLogger(record.name)
         logger.handle(record)
@@ -137,21 +135,14 @@ def run():
     logq, lp = _setup_logging(log_level, results_file)
     logger = logging.getLogger("hough")
     logger.info(f"=== Run started @ {arguments.now} ===")
-    if arguments.csv:
-        logger_csv = logging.getLogger("csv")
-        if not os.path.exists(results_file) or os.path.getsize(results_file) == 0:
-            logger_csv.info(
-                '"Input File","Page Number","Computed angle","Variance of computed angles","Image width (px)","Image height (px)"'
-            )
 
     if arguments.debug and not os.path.isdir(f"out/{arguments.now}"):
         os.makedirs(f"out/{arguments.now}")
 
-    # the pool that launched 1,000 Houghs...
+    # The pool that launched 1,000 Houghs...
     pages = []
     for f in arguments.file:
         pages += process.get_pages(f)
-
     # we do it this way, not with a map, until https://github.com/tqdm/tqdm/issues/548 is fixed
     results = []
     with ProcessPoolExecutor(
@@ -165,8 +156,32 @@ def run():
                 results.append(job.result())
             except StopIteration:
                 break
+            except KeyboardInterrupt:
+                logq.put(None)
+                lp.join()
+                logger.info(
+                    f"=== Run killed @ {datetime.datetime.utcnow().isoformat()} ==="
+                )
+                exit(-1)
             except Exception as e:
                 logger.debug(e)
+
+    if arguments.csv:
+        logger_csv = logging.getLogger("csv")
+        if not os.path.exists(results_file) or os.path.getsize(results_file) == 0:
+            logger_csv.info(
+                '"Input File","Page Number","Computed angle","Variance of computed angles","Image width (px)","Image height (px)"'
+            )
+
+    for result in results:
+        for image in result:
+            (fname, pagenum, angle, variance, pagew, pageh) = image
+            if arguments.csv:
+                logger_csv.info(
+                    '"{}",{},{},{},{},{}'.format(
+                        fname, pagenum, angle, variance, pagew, pageh,
+                    )
+                )
 
     if arguments.histogram:
         histogram(results_file)
