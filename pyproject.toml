@@ -19,7 +19,7 @@ termplotlib = "^0.2.4"
 pip = "20.0.2"
 pymupdf = "^1.16.15"
 filetype = "^1.0.6"
-tqdm = "^4.43.0"
+tqdm = "^4.44.1"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"
