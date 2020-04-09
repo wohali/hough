@@ -491,7 +491,7 @@ description = "Python bindings for the PDF rendering library MuPDF"
 name = "pymupdf"
 optional = false
 python-versions = "*"
-version = "1.16.16"
+version = "1.16.17"
 
 [[package]]
 category = "main"
@@ -764,7 +764,6 @@ version = "1.11.2"
 [[package]]
 category = "main"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-marker = "python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=3.6"
@@ -1076,28 +1075,28 @@ pylint = [
     {file = "pylint-2.4.4.tar.gz", hash = "sha256:3db5468ad013380e987410a8d6956226963aed94ecb5f9d3a28acca6d9ac36cd"},
 ]
 pymupdf = [
-    {file = "PyMuPDF-1.16.16-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:04181a26b3fb7d35d8d0719fc173c527fcc6557d66da656342a93724079e311b"},
-    {file = "PyMuPDF-1.16.16-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:a1f33c556b7476fdbe0835f6858ed3b781ba7b76cf71898bce303d5a2216d6c6"},
-    {file = "PyMuPDF-1.16.16-cp27-cp27m-win32.whl", hash = "sha256:5cf2af6ebe1b76100d868b3949fba0bdaa8e99808f8e034e30850074cb2ece74"},
-    {file = "PyMuPDF-1.16.16-cp27-cp27m-win_amd64.whl", hash = "sha256:ddf192e29b2dfaa1fb4f05da055dbfb486c86e3574dad1bec3e7a3b795f9d554"},
-    {file = "PyMuPDF-1.16.16-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:4879eafc87983c0ff4fe0985eb798232f078d23ca3c5d5002f9f5ac855ebb0ab"},
-    {file = "PyMuPDF-1.16.16-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:4664a5934af43f59ea38865d5d995a877b0489b3c2bda169c97bd7501f8050eb"},
-    {file = "PyMuPDF-1.16.16-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:ce9a6646229fc57e780b44e7e5bd5b9e1335635b7d8367b8ad7b0ebf40447a83"},
-    {file = "PyMuPDF-1.16.16-cp35-cp35m-win32.whl", hash = "sha256:7aad90cfeb19f50cf6567ea0d4a576c1d809e313c74b5cb9b87d25c1458e9548"},
-    {file = "PyMuPDF-1.16.16-cp35-cp35m-win_amd64.whl", hash = "sha256:090026188e758b26f39d322ffa2e66ce3f181cd0ed53f184176ef8c9c6c45eee"},
-    {file = "PyMuPDF-1.16.16-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:0df38f00d623b3988a19a9c02ebae3813b58b6cee10ffff13530c374939f87d3"},
-    {file = "PyMuPDF-1.16.16-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:cadb6f0192fb98453b1f45600464e077494193e9a6b2a1fff1275009c19b5ae8"},
-    {file = "PyMuPDF-1.16.16-cp36-cp36m-win32.whl", hash = "sha256:8069f4818ba4efc9b8b0a923828d46ee9a259e774cf6d3a2cca728c74fd80032"},
-    {file = "PyMuPDF-1.16.16-cp36-cp36m-win_amd64.whl", hash = "sha256:3d7a550dce21f0d8c857b6115c445663f2577ad049925b441b9107878901cf4b"},
-    {file = "PyMuPDF-1.16.16-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:4baee35f5b367395364afe0478b7699b50b06fd0483878b799e3dd93114cde86"},
-    {file = "PyMuPDF-1.16.16-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:0a89fb7a8e8dcdceaa2f0f504a3ef7837b914e4aa7d127c88eb950008cce058a"},
-    {file = "PyMuPDF-1.16.16-cp37-cp37m-win32.whl", hash = "sha256:c35e0acc836e78ea1d080d2f73aeea12b87562f917824681b8be83913df492f7"},
-    {file = "PyMuPDF-1.16.16-cp37-cp37m-win_amd64.whl", hash = "sha256:ae57470124ea4a37b8db4cf6b0642a70bd768961543c4e3d7dcad7e07f51f6a7"},
-    {file = "PyMuPDF-1.16.16-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:27e94a42e93ea54180df6d1149adbf9b18318289d05a3acce128fdca2d398b1c"},
-    {file = "PyMuPDF-1.16.16-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:9c5ba5372b8c4018deb3c24434fff6865fcfdcb5057e13b5550ff49dd1127e62"},
-    {file = "PyMuPDF-1.16.16-cp38-cp38-win32.whl", hash = "sha256:a485ccff98fb7d7e8e3b06ed48754904fc792e86755896d3344b899e14ad9a72"},
-    {file = "PyMuPDF-1.16.16-cp38-cp38-win_amd64.whl", hash = "sha256:3603b5ed4bd137acd06416950f0b3378937de13321b1dea60fb2c5cf5090eef7"},
-    {file = "PyMuPDF-1.16.16.tar.gz", hash = "sha256:db444b2c5c5e5502b45d797f79c1d93662d3a4be2701cbf09cf6a2ab97e484e7"},
+    {file = "PyMuPDF-1.16.17-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:af413e2d8c4262f84b92f1e3c9754cf93ece8b15abe07f2445310aead90f2e3c"},
+    {file = "PyMuPDF-1.16.17-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:979756e6c87a6edfec2c9c72a4dea05907e89063c4feb9c7692b346164bb2d9b"},
+    {file = "PyMuPDF-1.16.17-cp27-cp27m-win32.whl", hash = "sha256:2519f57c230778dfadb9dc5e80007102fd6e4ac577da6553e0b18fc031c3ec68"},
+    {file = "PyMuPDF-1.16.17-cp27-cp27m-win_amd64.whl", hash = "sha256:83f316dab4feb80fcb6eaab03cfdcf493e63e8e006e8416f98683cb515adbdda"},
+    {file = "PyMuPDF-1.16.17-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:95734fa7c99ff7e538c5d63be1250ebd25caf40dc62b3bff767a6bba1a87972d"},
+    {file = "PyMuPDF-1.16.17-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:d661bae62c0480f797db1d234cfaf79807922aa4189e810ef96aa8b9662a6de2"},
+    {file = "PyMuPDF-1.16.17-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:d9444c61ec385996ba06d675f2b61dff6528781058a11c1b75b636b0e27413f5"},
+    {file = "PyMuPDF-1.16.17-cp35-cp35m-win32.whl", hash = "sha256:d1f1cee9bbfe9ec15d656ae064c18a8376dabaab175fea620af13f7c6e4dea4f"},
+    {file = "PyMuPDF-1.16.17-cp35-cp35m-win_amd64.whl", hash = "sha256:e6baf90b852659a6241a07a6d07ffd677ffb7827a5806c203ae992996982a0f3"},
+    {file = "PyMuPDF-1.16.17-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:94145abf25840a4ce0608349073102daf29f1507170f349142548007ad131246"},
+    {file = "PyMuPDF-1.16.17-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:d2c6332004b2a4d4a1c464c25be61a00f86cfbf5abb5090d1182c52c9a60d26d"},
+    {file = "PyMuPDF-1.16.17-cp36-cp36m-win32.whl", hash = "sha256:5b6bb73c4eb6b77b83ca47df7fbb8181b32756f7026ad47a574dca6e15f63fcf"},
+    {file = "PyMuPDF-1.16.17-cp36-cp36m-win_amd64.whl", hash = "sha256:7fb2f8b52caef1e3e3e294a9988aad4d495c91a18f184db439b4cc20ddfe73a9"},
+    {file = "PyMuPDF-1.16.17-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:9465f76bf0b72b53afb15f3ab36c66a72a1c41e8bca97631104469cd2e5b2359"},
+    {file = "PyMuPDF-1.16.17-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:c32a6e665247a482d6adc85036beeda5d109272f0fce75c850ce6d9dc4c3c72f"},
+    {file = "PyMuPDF-1.16.17-cp37-cp37m-win32.whl", hash = "sha256:cc276abda8332ff253e9c43af5c29cdd13e2726a15dbd3862ab021de359a2c94"},
+    {file = "PyMuPDF-1.16.17-cp37-cp37m-win_amd64.whl", hash = "sha256:d3732e7b949470869dbc4a427110151fb2e72ade36028ac246f590bca1d0efc2"},
+    {file = "PyMuPDF-1.16.17-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d5a4ff5301d89a87ae1d87257da192b8e268489195334a6b2b7e81db5971779e"},
+    {file = "PyMuPDF-1.16.17-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:d5f3604e59e2da99db9d1fbdcc6c74e7190036df0880ea74e489edf05f624ea4"},
+    {file = "PyMuPDF-1.16.17-cp38-cp38-win32.whl", hash = "sha256:384dbda8720d51786ed6cb138e998f34f829192f1d8a58ae7cfb9ed129930a92"},
+    {file = "PyMuPDF-1.16.17-cp38-cp38-win_amd64.whl", hash = "sha256:28ba0a25ddba9652b2fd6e2277d27887fffd01a5a0e85e4e3a8c60c4348285f1"},
+    {file = "PyMuPDF-1.16.17.tar.gz", hash = "sha256:b165fa5243cf6ce29127c0117e733e258f586a7513e70f2afc1278b762ba8b62"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.6-py2.py3-none-any.whl", hash = "sha256:c342dccb5250c08d45fd6f8b4a559613ca603b57498511740e65cd11a2e7dcec"},
