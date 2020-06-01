@@ -189,7 +189,7 @@ description = "Flake8 wrapper to make it nice and configurable"
 name = "flakehell"
 optional = false
 python-versions = ">=3.5"
-version = "0.3.6"
+version = "0.4.6"
 
 [package.dependencies]
 entrypoints = "*"
@@ -201,7 +201,7 @@ toml = "*"
 urllib3 = "*"
 
 [package.extras]
-dev = ["dlint", "flake8-alfred", "flake8-annotations-complexity", "flake8-bandit", "flake8-broken-line", "flake8-bugbear", "flake8-builtins", "flake8-coding", "flake8-commas", "flake8-comprehensions", "flake8-debugger", "flake8-django", "flake8-docstrings", "flake8-eradicate", "flake8-executable", "flake8-future-import", "flake8-isort", "flake8-logging-format", "flake8-mock", "flake8-mutable", "flake8-pep3101", "flake8-pie", "flake8-print", "flake8-pytest", "flake8-quotes", "flake8-rst-docstrings", "flake8-scrapy", "flake8-strict", "flake8-string-format", "flake8-variables-names", "mccabe", "pep8-naming", "pytest", "typing-extensions", "wemake-python-styleguide"]
+dev = ["dlint", "flake8-alfred", "flake8-annotations-complexity", "flake8-bandit", "flake8-broken-line", "flake8-bugbear", "flake8-builtins", "flake8-coding", "flake8-commas", "flake8-comprehensions", "flake8-debugger", "flake8-django", "flake8-docstrings", "flake8-eradicate", "flake8-executable", "flake8-future-import", "flake8-isort", "flake8-logging-format", "flake8-mock", "flake8-mutable", "flake8-pep3101", "flake8-pie", "flake8-print", "flake8-pytest", "flake8-quotes", "flake8-rst-docstrings", "flake8-scrapy", "flake8-strict", "flake8-string-format", "flake8-variables-names", "isort", "mccabe", "pep8-naming", "pytest", "typing-extensions", "wemake-python-styleguide"]
 docs = ["alabaster", "pygments-github-lexers", "recommonmark", "sphinx"]
 
 [[package]]
@@ -791,7 +791,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "34079473fbaf7bf775b5d266177bea54cfe84751bc5e0f553bec1527cd1dd92a"
+content-hash = "fea032b76ccf1aa723842728c52122e0d8af2b518bf0a2210fe88f6759adbd79"
 python-versions = "^3.6.1"
 
 [metadata.files]
@@ -892,8 +892,8 @@ flake8 = [
     {file = "flake8-3.8.2.tar.gz", hash = "sha256:c69ac1668e434d37a2d2880b3ca9aafd54b3a10a3ac1ab101d22f29e29cf8634"},
 ]
 flakehell = [
-    {file = "flakehell-0.3.6-py3-none-any.whl", hash = "sha256:28f5b44cbeea49a23d65bf36bf511b8b18efdba31e4b61ba7666be9863460b76"},
-    {file = "flakehell-0.3.6.tar.gz", hash = "sha256:1f59d0972366d1269889f7a339ff02253b416c53349a25866e396b3ca081d085"},
+    {file = "flakehell-0.4.6-py3-none-any.whl", hash = "sha256:418be079992a8b947687d3c09c1df81686ca115610ab1e996e4fb97b6424c621"},
+    {file = "flakehell-0.4.6.tar.gz", hash = "sha256:541172d6b324c185b94d154492bb851241ee5b6eeb5e595ddbcecb73243743a2"},
 ]
 identify = [
     {file = "identify-1.4.16-py2.py3-none-any.whl", hash = "sha256:0f3c3aac62b51b86fea6ff52fe8ff9e06f57f10411502443809064d23e16f1c2"},
