@@ -245,7 +245,7 @@ itk = ["itk"]
 
 [[package]]
 name = "importlib-metadata"
-version = "1.7.0"
+version = "2.0.0"
 description = "Read metadata from Python packages"
 category = "main"
 optional = false
@@ -784,7 +784,7 @@ testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6.1"
-content-hash = "247b0f0edfd2d190f54875ff3799d425cb93523468820966bc0983d146b005e9"
+content-hash = "4bea40bddc0396a4231380a01171a6f830f7456b74733cca602e9407b94d9b43"
 
 [metadata.files]
 appdirs = [
@@ -907,8 +907,8 @@ imageio = [
     {file = "imageio-2.9.0.tar.gz", hash = "sha256:52ddbaeca2dccf53ba2d6dec5676ca7bc3b2403ef8b37f7da78b7654bb3e10f0"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-1.7.0-py2.py3-none-any.whl", hash = "sha256:dc15b2969b4ce36305c51eebe62d418ac7791e9a157911d58bfb1f9ccd8e2070"},
-    {file = "importlib_metadata-1.7.0.tar.gz", hash = "sha256:90bb658cdbbf6d1735b6341ce708fc7024a3e14e99ffdc5783edea9f9b077f83"},
+    {file = "importlib_metadata-2.0.0-py2.py3-none-any.whl", hash = "sha256:cefa1a2f919b866c5beb7c9f7b0ebb4061f30a8a9bf16d609b000e2dfaceb9c3"},
+    {file = "importlib_metadata-2.0.0.tar.gz", hash = "sha256:77a540690e24b0305878c37ffd421785a6f7e53c8b5720d211b211de8d0e95da"},
 ]
 importlib-resources = [
     {file = "importlib_resources-3.0.0-py2.py3-none-any.whl", hash = "sha256:d028f66b66c0d5732dae86ba4276999855e162a749c92620a38c1d779ed138a7"},
