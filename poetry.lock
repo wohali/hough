@@ -444,7 +444,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "pymupdf"
-version = "1.18.3"
+version = "1.18.12"
 description = "Python bindings for the PDF rendering library MuPDF"
 category = "main"
 optional = false
@@ -1027,23 +1027,23 @@ pygments = [
     {file = "Pygments-2.7.2.tar.gz", hash = "sha256:381985fcc551eb9d37c52088a32914e00517e57f4a21609f48141ba08e193fa0"},
 ]
 pymupdf = [
-    {file = "PyMuPDF-1.18.3-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:50d80512be438fdaf26d6e58f62196f971ec8696c6bd9e8316d959a1751f1057"},
-    {file = "PyMuPDF-1.18.3-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:8c3fbb7d8838653f30609301d9c05705866f33a2f9477e98bc8f7030d43a0fdd"},
-    {file = "PyMuPDF-1.18.3-cp36-cp36m-win32.whl", hash = "sha256:2890d5deb9701dc5ab15696ab44752a59a396b9e44812f25a514b058604c7504"},
-    {file = "PyMuPDF-1.18.3-cp36-cp36m-win_amd64.whl", hash = "sha256:e6553eebadb570ccf2fc2e9fe294d4e76a751df41da552345755d2a443cf53b6"},
-    {file = "PyMuPDF-1.18.3-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:503cb61aa755347e09e9a6eefd7a142b67b1a10583ea66b997dba547a58c13d1"},
-    {file = "PyMuPDF-1.18.3-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:b81e0abba6741ff3aca03571f113461c2074396560d44b05949c38f63a588202"},
-    {file = "PyMuPDF-1.18.3-cp37-cp37m-win32.whl", hash = "sha256:b127defedcea2e3b47d47f98d743e4d84c060b4252aa1b06d0779f3fbdc9bb44"},
-    {file = "PyMuPDF-1.18.3-cp37-cp37m-win_amd64.whl", hash = "sha256:b50e63f200ab258418a9cc02840a6bf2629d965eaef1bf5abe481d1ad150f03a"},
-    {file = "PyMuPDF-1.18.3-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6d987b01b974cec186ea4aba84b4011417c77e38304d774b307c092bb6a585b3"},
-    {file = "PyMuPDF-1.18.3-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:fe719a34b7a1a56b8b9b3e14cd5343729a181dca65a306e8e99c616e5c7fd561"},
-    {file = "PyMuPDF-1.18.3-cp38-cp38-win32.whl", hash = "sha256:3d603303fa014205c7b3d6faee875c1b4958742d4039499a0eba6f37b8252191"},
-    {file = "PyMuPDF-1.18.3-cp38-cp38-win_amd64.whl", hash = "sha256:96d392719f4323e96738073b5965ba3ee3045e8a2dd6516ea0e148bcb2f78986"},
-    {file = "PyMuPDF-1.18.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:9d0ab4b344cc504dfacc71566259fd08d911468e5362a46650c4adfae248dfe0"},
-    {file = "PyMuPDF-1.18.3-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:a4718b41f1ccc94ec64d23c665c75475f910c2eb5ab911411d98d03b562c1b35"},
-    {file = "PyMuPDF-1.18.3-cp39-cp39-win32.whl", hash = "sha256:714cb60822e51615a9edafba19cc0f906c4859c7e72a580d116950757d04e548"},
-    {file = "PyMuPDF-1.18.3-cp39-cp39-win_amd64.whl", hash = "sha256:24b28ff01430ece53666c5e9e84673409d7e1d1d1318123dd24c0f5271c498b8"},
-    {file = "PyMuPDF-1.18.3.tar.gz", hash = "sha256:d7bf62b6dd934d62e7d85389a23c0e194cf96556d5f36a0200a78a16ba5c695b"},
+    {file = "PyMuPDF-1.18.12-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:fc63949b63990baa4b738a151bc2d745e3b0d0bc0be5ac2e4fc14f4898d99a70"},
+    {file = "PyMuPDF-1.18.12-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:742cb9bf84bd67d7fc8824c9fc69d8fb1eea47480749c7fd5dbcf7954df1fb9a"},
+    {file = "PyMuPDF-1.18.12-cp36-cp36m-win32.whl", hash = "sha256:19a228af7b9438bf59f1ec52202ac6f014202046dab182f82acb6efdbf6f9e4b"},
+    {file = "PyMuPDF-1.18.12-cp36-cp36m-win_amd64.whl", hash = "sha256:ba60a8ecbae946f36390ba32315235480a35af1a8304bc1927d9e36b87707b70"},
+    {file = "PyMuPDF-1.18.12-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:9fa9bcc6b6f0fce3f15426f3b9c2e1fd92643dfcd6ce24621339a33074405002"},
+    {file = "PyMuPDF-1.18.12-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:d2082f1e7728abc90ad69e4081d0aed4f75858f95c61ab91fedeb44f35a17011"},
+    {file = "PyMuPDF-1.18.12-cp37-cp37m-win32.whl", hash = "sha256:a1b5e2612d120c9c17ea803ed0bfc326228ce9b0be12d068a1a9704336d4e242"},
+    {file = "PyMuPDF-1.18.12-cp37-cp37m-win_amd64.whl", hash = "sha256:77554e5fd49342192ae12f11836bf355212c8711a4f38af22fc3090a039cf678"},
+    {file = "PyMuPDF-1.18.12-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:08c0b1ce23537b6abb87e6e0711fb823507530ab246cb211ae67b9e418e18ae8"},
+    {file = "PyMuPDF-1.18.12-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:73f0f354040ebb7c7ab04f27993a08c8c1223ac63e2a5863d04ef8fe4b91cfc5"},
+    {file = "PyMuPDF-1.18.12-cp38-cp38-win32.whl", hash = "sha256:412c130c30ee3723950a56cf58598657279fff164d7efbf358bb1a663aec42d0"},
+    {file = "PyMuPDF-1.18.12-cp38-cp38-win_amd64.whl", hash = "sha256:d81c3da49cb95bdd991a4abf6b5653501a3e597a89aa981ef1afddf9a56e88bb"},
+    {file = "PyMuPDF-1.18.12-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:819ec801866a11febf35045dbe0006600ac435d4cd5480d81074cc98b03ace4b"},
+    {file = "PyMuPDF-1.18.12-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:41f708d8e4031beb7b07853c1362c76d86991b2acf6d86167db093b91962364f"},
+    {file = "PyMuPDF-1.18.12-cp39-cp39-win32.whl", hash = "sha256:813c7be49208f224cdecede26aab780ba4814ffd1346ef2a4f740d413944b57e"},
+    {file = "PyMuPDF-1.18.12-cp39-cp39-win_amd64.whl", hash = "sha256:9a4e1e5b80b518480b9518b22b103a2947824ee39e0d66743c3b3ced35086523"},
+    {file = "PyMuPDF-1.18.12.tar.gz", hash = "sha256:daf48e7a34ae25f0507688c350431e59d4207326347cbfcc767960c3039555fb"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
@@ -1074,18 +1074,27 @@ pywavelets = [
     {file = "PyWavelets-1.1.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:7947e51ca05489b85928af52a34fe67022ab5b81d4ae32a4109a99e883a0635e"},
     {file = "PyWavelets-1.1.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:9e2528823ccf5a0a1d23262dfefe5034dce89cd84e4e124dc553dfcdf63ebb92"},
     {file = "PyWavelets-1.1.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:80b924edbc012ded8aa8b91cb2fd6207fb1a9a3a377beb4049b8a07445cec6f0"},
+    {file = "PyWavelets-1.1.1-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:c2a799e79cee81a862216c47e5623c97b95f1abee8dd1f9eed736df23fb653fb"},
     {file = "PyWavelets-1.1.1-cp36-cp36m-win32.whl", hash = "sha256:d510aef84d9852653d079c84f2f81a82d5d09815e625f35c95714e7364570ad4"},
     {file = "PyWavelets-1.1.1-cp36-cp36m-win_amd64.whl", hash = "sha256:889d4c5c5205a9c90118c1980df526857929841df33e4cd1ff1eff77c6817a65"},
     {file = "PyWavelets-1.1.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:68b5c33741d26c827074b3d8f0251de1c3019bb9567b8d303eb093c822ce28f1"},
     {file = "PyWavelets-1.1.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:18a51b3f9416a2ae6e9a35c4af32cf520dd7895f2b69714f4aa2f4342fca47f9"},
     {file = "PyWavelets-1.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:cfe79844526dd92e3ecc9490b5031fca5f8ab607e1e858feba232b1b788ff0ea"},
+    {file = "PyWavelets-1.1.1-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:2f7429eeb5bf9c7068002d0d7f094ed654c77a70ce5e6198737fd68ab85f8311"},
     {file = "PyWavelets-1.1.1-cp37-cp37m-win32.whl", hash = "sha256:720dbcdd3d91c6dfead79c80bf8b00a1d8aa4e5d551dc528c6d5151e4efc3403"},
     {file = "PyWavelets-1.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:bc5e87b72371da87c9bebc68e54882aada9c3114e640de180f62d5da95749cd3"},
     {file = "PyWavelets-1.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:98b2669c5af842a70cfab33a7043fcb5e7535a690a00cd251b44c9be0be418e5"},
     {file = "PyWavelets-1.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:e02a0558e0c2ac8b8bbe6a6ac18c136767ec56b96a321e0dfde2173adfa5a504"},
     {file = "PyWavelets-1.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:6162dc0ae04669ea04b4b51420777b9ea2d30b0a9d02901b2a3b4d61d159c2e9"},
+    {file = "PyWavelets-1.1.1-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:39c74740718e420d38c78ca4498568fa57976d78d5096277358e0fa9629a7aea"},
     {file = "PyWavelets-1.1.1-cp38-cp38-win32.whl", hash = "sha256:79f5b54f9dc353e5ee47f0c3f02bebd2c899d49780633aa771fed43fa20b3149"},
     {file = "PyWavelets-1.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:935ff247b8b78bdf77647fee962b1cc208c51a7b229db30b9ba5f6da3e675178"},
+    {file = "PyWavelets-1.1.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:6ebfefebb5c6494a3af41ad8c60248a95da267a24b79ed143723d4502b1fe4d7"},
+    {file = "PyWavelets-1.1.1-cp39-cp39-manylinux1_i686.whl", hash = "sha256:6bc78fb9c42a716309b4ace56f51965d8b5662c3ba19d4591749f31773db1125"},
+    {file = "PyWavelets-1.1.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:411e17ca6ed8cf5e18a7ca5ee06a91c25800cc6c58c77986202abf98d749273a"},
+    {file = "PyWavelets-1.1.1-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:83c5e3eb78ce111c2f0b45f46106cc697c3cb6c4e5f51308e1f81b512c70c8fb"},
+    {file = "PyWavelets-1.1.1-cp39-cp39-win32.whl", hash = "sha256:2b634a54241c190ee989a4af87669d377b37c91bcc9cf0efe33c10ff847f7841"},
+    {file = "PyWavelets-1.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:732bab78435c48be5d6bc75486ef629d7c8f112e07b313bf1f1a2220ab437277"},
     {file = "PyWavelets-1.1.1.tar.gz", hash = "sha256:1a64b40f6acb4ffbaccce0545d7fc641744f95351f62e4c6aaa40549326008c9"},
 ]
 pyyaml = [
@@ -1099,6 +1108,8 @@ pyyaml = [
     {file = "PyYAML-5.3.1-cp37-cp37m-win_amd64.whl", hash = "sha256:73f099454b799e05e5ab51423c7bcf361c58d3206fa7b0d555426b1f4d9a3eaf"},
     {file = "PyYAML-5.3.1-cp38-cp38-win32.whl", hash = "sha256:06a0d7ba600ce0b2d2fe2e78453a470b5a6e000a985dd4a4e54e436cc36b0e97"},
     {file = "PyYAML-5.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:95f71d2af0ff4227885f7a6605c37fd53d3a106fcab511b8860ecca9fcf400ee"},
+    {file = "PyYAML-5.3.1-cp39-cp39-win32.whl", hash = "sha256:ad9c67312c84def58f3c04504727ca879cb0013b2517c85a9a253f0cb6380c0a"},
+    {file = "PyYAML-5.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:6034f55dab5fea9e53f436aa68fa3ace2634918e8b5994d82f3621c04ff5ed2e"},
     {file = "PyYAML-5.3.1.tar.gz", hash = "sha256:b8eac752c5e14d3eca0e6dd9199cd627518cb5ec06add0de9d32baeee6fe645d"},
 ]
 regex = [
@@ -1218,19 +1229,28 @@ typed-ast = [
     {file = "typed_ast-1.4.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:269151951236b0f9a6f04015a9004084a5ab0d5f19b57de779f908621e7d8b75"},
     {file = "typed_ast-1.4.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:24995c843eb0ad11a4527b026b4dde3da70e1f2d8806c99b7b4a7cf491612652"},
     {file = "typed_ast-1.4.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:fe460b922ec15dd205595c9b5b99e2f056fd98ae8f9f56b888e7a17dc2b757e7"},
+    {file = "typed_ast-1.4.1-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:fcf135e17cc74dbfbc05894ebca928ffeb23d9790b3167a674921db19082401f"},
     {file = "typed_ast-1.4.1-cp36-cp36m-win32.whl", hash = "sha256:4e3e5da80ccbebfff202a67bf900d081906c358ccc3d5e3c8aea42fdfdfd51c1"},
     {file = "typed_ast-1.4.1-cp36-cp36m-win_amd64.whl", hash = "sha256:249862707802d40f7f29f6e1aad8d84b5aa9e44552d2cc17384b209f091276aa"},
     {file = "typed_ast-1.4.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:8ce678dbaf790dbdb3eba24056d5364fb45944f33553dd5869b7580cdbb83614"},
     {file = "typed_ast-1.4.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:c9e348e02e4d2b4a8b2eedb48210430658df6951fa484e59de33ff773fbd4b41"},
     {file = "typed_ast-1.4.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:bcd3b13b56ea479b3650b82cabd6b5343a625b0ced5429e4ccad28a8973f301b"},
+    {file = "typed_ast-1.4.1-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:f208eb7aff048f6bea9586e61af041ddf7f9ade7caed625742af423f6bae3298"},
     {file = "typed_ast-1.4.1-cp37-cp37m-win32.whl", hash = "sha256:d5d33e9e7af3b34a40dc05f498939f0ebf187f07c385fd58d591c533ad8562fe"},
     {file = "typed_ast-1.4.1-cp37-cp37m-win_amd64.whl", hash = "sha256:0666aa36131496aed8f7be0410ff974562ab7eeac11ef351def9ea6fa28f6355"},
     {file = "typed_ast-1.4.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:d205b1b46085271b4e15f670058ce182bd1199e56b317bf2ec004b6a44f911f6"},
     {file = "typed_ast-1.4.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:6daac9731f172c2a22ade6ed0c00197ee7cc1221aa84cfdf9c31defeb059a907"},
     {file = "typed_ast-1.4.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:498b0f36cc7054c1fead3d7fc59d2150f4d5c6c56ba7fb150c013fbc683a8d2d"},
+    {file = "typed_ast-1.4.1-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:7e4c9d7658aaa1fc80018593abdf8598bf91325af6af5cce4ce7c73bc45ea53d"},
     {file = "typed_ast-1.4.1-cp38-cp38-win32.whl", hash = "sha256:715ff2f2df46121071622063fc7543d9b1fd19ebfc4f5c8895af64a77a8c852c"},
     {file = "typed_ast-1.4.1-cp38-cp38-win_amd64.whl", hash = "sha256:fc0fea399acb12edbf8a628ba8d2312f583bdbdb3335635db062fa98cf71fca4"},
     {file = "typed_ast-1.4.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:d43943ef777f9a1c42bf4e552ba23ac77a6351de620aa9acf64ad54933ad4d34"},
+    {file = "typed_ast-1.4.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:92c325624e304ebf0e025d1224b77dd4e6393f18aab8d829b5b7e04afe9b7a2c"},
+    {file = "typed_ast-1.4.1-cp39-cp39-manylinux1_i686.whl", hash = "sha256:d648b8e3bf2fe648745c8ffcee3db3ff903d0817a01a12dd6a6ea7a8f4889072"},
+    {file = "typed_ast-1.4.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:fac11badff8313e23717f3dada86a15389d0708275bddf766cca67a84ead3e91"},
+    {file = "typed_ast-1.4.1-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:0d8110d78a5736e16e26213114a38ca35cb15b6515d535413b090bd50951556d"},
+    {file = "typed_ast-1.4.1-cp39-cp39-win32.whl", hash = "sha256:b52ccf7cfe4ce2a1064b18594381bccf4179c2ecf7f513134ec2f993dd4ab395"},
+    {file = "typed_ast-1.4.1-cp39-cp39-win_amd64.whl", hash = "sha256:3742b32cf1c6ef124d57f95be609c473d7ec4c14d0090e5a5e05a15269fb4d0c"},
     {file = "typed_ast-1.4.1.tar.gz", hash = "sha256:8c8aaad94455178e3187ab22c8b01a3837f8ee50e09cf31f1ba129eb293ec30b"},
 ]
 typing-extensions = [
