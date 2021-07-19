@@ -65,7 +65,7 @@ pymupdf = "^1.17.0"
 filetype = "^1.0.6"
 tqdm = "^4.43.0"
 coverage = {extras = ["toml"], version = "^5.0.4"}
-importlib_metadata = {version = "^2.1.1"}
+importlib_metadata = {version = ">=2.1.1,<5.0.0"}
 
 [tool.poetry.dev-dependencies]
 #flake8 = "^3.7.9"
