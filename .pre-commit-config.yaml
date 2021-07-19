@@ -14,7 +14,6 @@ repos:
     rev: 19.10b0
     hooks:
     - id: black
-      language_version: python3.7
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.4.0
     hooks:
@@ -23,12 +22,17 @@ repos:
     -   id: check-added-large-files
         args: ['--maxkb=1024']
     -   id: check-toml
--   repo: local
+#-   repo: local
+#    hooks:
+#    -   id: flakehell
+#        name: flakehell (flake8 wrapper)
+#        description: flake8 wrapper for pyproject.toml compat
+#        entry: flakehell
+#        args: ['lint']
+#        language: python
+#        types: [python]
+-   repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
     hooks:
-    -   id: flakehell
-        name: flakehell (flake8 wrapper)
-        description: flake8 wrapper for pyproject.toml compat
-        entry: flakehell
-        args: ['lint']
-        language: python
-        types: [python]
+    -    id: flake8
+         exclude: ^samples/
