@@ -15,6 +15,7 @@ exclude_lines = [
 ]
 
 [tool.flakehell]
+extended_default_ignore=[]  # see https://github.com/flakehell/flakehell/issues/10#issuecomment-823512441
 max_line_length = 88
 format = "colored"
 exclude = [".venv",".git","__pycache__","doc/*","build","dist",".tox"]
@@ -25,7 +26,7 @@ show_source = true
 
 [tool.poetry]
 name = "hough"
-version = "0.2.6"
+version = "0.2.7"
 description = "Skew detection and correction in scanned images"
 authors = ["qu1j0t3 <support@telegraphics.com.au>", "Joan Touzet <wohali@apache.org>"]
 maintainers = ["Joan Touzet <wohali@apache.org>"]
@@ -39,9 +40,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: POSIX",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Topic :: Multimedia :: Graphics",
     "Topic :: Multimedia :: Graphics :: Capture :: Scanners",
 ]
@@ -53,11 +54,11 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.7"
 docopt-ng = "^0.7.2"
 imageio = "^2.8.0"
 numpy = "^1.18.2"
-scikit-image = ">=0.16.2,<0.18.0"
+scikit-image = "^0.18"
 scipy = "^1.4.1"
 termplotlib = "^0.3.0"
 pymupdf = "^1.17.0"

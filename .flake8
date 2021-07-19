@@ -1,0 +1,7 @@
+[flake8]
+max_line_length = 88
+format = colored
+exclude = .venv,.git,__pycache__,doc/*,build,dist,.tox
+select = C,E,F,W,B,B950
+ignore = E203,E501,W503
+show_source = true

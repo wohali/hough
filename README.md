@@ -194,6 +194,13 @@ poetry install
 poetry shell
 ```
 
+Do some work, then run the tests with
+
+```
+pytest
+pre-commit run
+```
+
 # License notice
 
 ```
