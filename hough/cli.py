@@ -184,14 +184,15 @@ def run(argv=sys.argv[1:]):
                     ):
                         pbar.update()
                         results.append(result)
-            p.close()
-            p.join()
         except KeyboardInterrupt:
             import sys
 
             print("Caught KeyboardInterrupt, terminating workers...", file=sys.stderr)
             _abort(p, logq, listener)
             return -1
+        finally:
+            p.close()
+            p.join()
 
     logger_csv = logging.getLogger("csv")
     if not os.path.exists(arguments.results) or os.path.getsize(arguments.results) == 0:
