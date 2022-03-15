@@ -16,7 +16,11 @@ from skimage.draw import line_aa
 from skimage.exposure import is_low_contrast
 from skimage.feature import canny
 from skimage.morphology import binary_dilation
-from skimage.transform import probabilistic_hough_line, rescale, downscale_local_mean
+from skimage.transform import (
+    downscale_local_mean,
+    probabilistic_hough_line,
+    rescale,
+)
 from skimage.util import crop, img_as_ubyte, img_as_uint, invert
 
 import hough
@@ -31,8 +35,8 @@ def grey(x):
     return 0.3 if x else 0.0
 
 
-def bool_to_255(x): # pragma: no cover
-    return 255 if x else 0 
+def bool_to_255(x):  # pragma: no cover
+    return 255 if x else 0
 
 
 def sum(a):
@@ -70,19 +74,20 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
 
     # Grab a +/- WINDOW-SIZE strip for evaluation. We've already cropped out the margins.
     if orientation == "H":
-        cropped = pos[
-            max(line - wsz, 0) : min(
-                line + wsz, height
-            )  # noqa: E203
-        ]
+        cropped = pos[max(line - wsz, 0) : min(line + wsz, height)]  # noqa: E203
     else:
         cropped = pos[
-            :,
-            max(line - wsz, 0) : min(
-                line + wsz, width
-            ),  # noqa: E203
+            :, max(line - wsz, 0) : min(line + wsz, width),  # noqa: E203
         ]
-    edges = binary_dilation(canny(cropped, sigma=2.0, mode="reflect", low_threshold=thresh[0], high_threshold=thresh[1]))
+    edges = binary_dilation(
+        canny(
+            cropped,
+            sigma=2.0,
+            mode="reflect",
+            low_threshold=thresh[0],
+            high_threshold=thresh[1],
+        )
+    )
     lines = probabilistic_hough_line(edges, line_length=length, line_gap=2, theta=theta)
 
     angles = []
@@ -92,17 +97,24 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
         if orientation == "H":
             k = 1 if x1 > x0 else -1
             offset = 0
-            horiz = True
         else:
             k = 1 if y1 > y0 else -1
             offset = 90
-            horiz = False
-        angles.append( (orientation, offset - np.rad2deg(np.math.atan2(k * (y1 - y0), k * (x1 - x0))), x0, y0, x1, y1))
+        angles.append(
+            (
+                orientation,
+                offset - np.rad2deg(np.math.atan2(k * (y1 - y0), k * (x1 - x0))),
+                x0,
+                y0,
+                x1,
+                y1,
+            )
+        )
 
     return (angles, edges)
 
 
-def _init_worker(queue, debug_arg, now_arg): # pragma: no cover
+def _init_worker(queue, debug_arg, now_arg):  # pragma: no cover
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     log_utils.setup_queue_logging(queue)
     # this is a global only within the multiprocessing Pool workers, not in the main process.
@@ -113,7 +125,7 @@ def _init_worker(queue, debug_arg, now_arg): # pragma: no cover
 
 def get_pages(f):
     """Returns the pages in the file, as a list of tuples of the form:
-        [(filename, "mime/type", pagenum), ... ]
+    [(filename, "mime/type", pagenum), ... ]
     """
     try:
         kind = filetype.guess(f)
@@ -161,9 +173,7 @@ def analyse_page(tuple):
                 except ValueError as e:
                     logger.error(f"Skipping {f} - page {pagenum}: {e}")
             else:
-                logger.error(
-                    f"Skipping process {f} - page {pagenum} (smask=={smask})"
-                )
+                logger.error(f"Skipping process {f} - page {pagenum} (smask=={smask})")
         return results
     else:
         # TODO: support multi-image TIFF with
@@ -211,18 +221,19 @@ def analyse_image(f, page, logger, pagenum=None):
     neg = thr - p
     if debug:
         imwrite(
-            f"debug/{now}/{filename}_{pagenum}_neg.png",
-            neg,
+            f"debug/{now}/{filename}_{pagenum}_neg.png", neg,
         )
 
     h_angles, h_edges = hough_angles(pos, neg, "H")
     v_angles, v_edges = hough_angles(pos, neg, "V")
 
     if debug:
-        imwrite(f"debug/{now}/{filename}_{pagenum}_simple_dilation_h_edges.png",
+        imwrite(
+            f"debug/{now}/{filename}_{pagenum}_simple_dilation_h_edges.png",
             img_as_ubyte(h_edges),
         )
-        imwrite(f"debug/{now}/{filename}_{pagenum}_simple_dilation_v_edges.png",
+        imwrite(
+            f"debug/{now}/{filename}_{pagenum}_simple_dilation_v_edges.png",
             img_as_ubyte(v_edges),
         )
 
@@ -256,11 +267,15 @@ def analyse_image(f, page, logger, pagenum=None):
                 if orn == "H":
                     hs += 1
                     for k, v in enumerate(val):
-                        h_edges_grey[rr[k], cc[k]] = (1-v) * h_edges_grey[rr[k], cc[k]] + v
+                        h_edges_grey[rr[k], cc[k]] = (1 - v) * h_edges_grey[
+                            rr[k], cc[k]
+                        ] + v
                 else:
                     vs += 1
                     for k, v in enumerate(val):
-                        v_edges_grey[rr[k], cc[k]] = (1-v) * v_edges_grey[rr[k], cc[k]] + v
+                        v_edges_grey[rr[k], cc[k]] = (1 - v) * v_edges_grey[
+                            rr[k], cc[k]
+                        ] + v
             if hs > 0:
                 imwrite(
                     f"debug/{now}/{filename}_{pagenum}_hlines.png",
@@ -280,13 +295,13 @@ def analyse_image(f, page, logger, pagenum=None):
         # We didn't find a good feature at the H or V sum peaks.
         # Let's brutally dilate everything and look for a vertical margin!
         height, width = neg.shape
-        if height * width > int(1E6):
+        if height * width > int(1e6):
             print("shrinking")
             small = downscale_local_mean(neg, (2, 2))
         else:
             small = neg
         t = skimage.filters.threshold_otsu(small)
-        dilated = binary_dilation(small > t, np.ones((60,60)))
+        dilated = binary_dilation(small > t, np.ones((60, 60)))
 
         edges = canny(dilated, 3)
         edges_grey = greyf(edges)
@@ -326,10 +341,10 @@ def analyse_image(f, page, logger, pagenum=None):
                     f"debug/{now}/{filename}_{pagenum}_{angle}_lines.png",
                     img_as_ubyte(edges_grey),
                 )
-                #imwrite(
+                # imwrite(
                 #    f"debug/{now}/{filename}_{pagenum}_{angle}_lines_verticaldilated.png",
                 #    bool_to_255f(img_as_ubyte(dilated)),
-                #)
+                # )
         else:
             angle = None
             logger.debug(f"{filename} p{pagenum} failed dilated Hough V")
