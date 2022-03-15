@@ -36,13 +36,13 @@ def rotate(imagelist, out, generator=False):
         else:
             if kind and kind.mime == "application/pdf":
                 doc = fitz.open(image[0])
-                imagelist = doc.getPageImageList(page - 1)
+                imagelist = doc.get_page_images(page - 1)
                 # TODO: Correctly deal with multiple images on a page
                 for item in imagelist:
                     xref = item[0]
                     smask = item[1]
                     if smask == 0:
-                        imgdict = doc.extractImage(xref)
+                        imgdict = doc.extract_image(xref)
                         logger.info(
                             f"Rotating {filename} - page {page} - xref {xref}..."
                         )
@@ -55,11 +55,11 @@ def rotate(imagelist, out, generator=False):
                             imgbytes = imwrite("<bytes>", fixed, format=imgext)
                             imgdoc = fitz.open(stream=imgbytes, filetype=imgext)
                             rect = imgdoc[0].rect
-                            pdfbytes = imgdoc.convertToPDF()
+                            pdfbytes = imgdoc.convert_to_pdf()
                             imgdoc.close()
-                            imgPDF = fitz.open("pdf", pdfbytes)
-                            page = newdoc.newPage(width=rect.width, height=rect.height)
-                            page.showPDFpage(rect, imgPDF, 0)
+                            img_pdf = fitz.open("pdf", pdfbytes)
+                            page = newdoc.new_page(width=rect.width, height=rect.height)
+                            page.show_pdf_page(rect, img_pdf, 0)
                         except ValueError as e:
                             logger.error(
                                 f"Skipping rotating {filename} - page {page} - xref {xref}: {e}"

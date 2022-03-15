@@ -1,0 +1,7 @@
+[run]
+branch = true
+disable_warnings = ["module-not-imported", "no-data-collected", "module-not-measured"]
+
+[report]
+exclude_lines = [ "pragma: no cover", "raise AssertionError", "raise NotImplementedError", "except KeyboardInterrupt", "if __name__ == .__main__.:", ]
+

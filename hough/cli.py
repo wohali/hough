@@ -53,10 +53,12 @@ Options:
 import csv
 import datetime
 import logging
+import multiprocessing
 import os
 import sys
 import time
-from multiprocessing import Pool, cpu_count, freeze_support
+from multiprocessing import cpu_count, freeze_support
+from multiprocessing.pool import Pool
 
 from docopt import docopt
 from tqdm import tqdm
@@ -68,7 +70,7 @@ from . import log_utils
 
 def _abort(pool=None, log_queue=None, listener=None):
     try:
-        if pool:
+        if pool and isinstance(pool, Pool):
             pool.close()
             pool.terminate()
             pool.join()
@@ -184,15 +186,14 @@ def run(argv=sys.argv[1:]):
                     ):
                         pbar.update()
                         results.append(result)
+            p.close()
+            p.join()
         except KeyboardInterrupt:
             import sys
 
             print("Caught KeyboardInterrupt, terminating workers...", file=sys.stderr)
             _abort(p, logq, listener)
             return -1
-        finally:
-            p.close()
-            p.join()
 
     logger_csv = logging.getLogger("csv")
     if not os.path.exists(arguments.results) or os.path.getsize(arguments.results) == 0:

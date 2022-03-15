@@ -2,8 +2,7 @@
 
 [tool.coverage.run]
 branch = true
-source = ["hough"]
-concurrency = ["multiprocessing"]
+disable_warnings = ["module-not-imported", "no-data-collected", "module-not-measured"]
 
 [tool.coverage.report]
 exclude_lines = [

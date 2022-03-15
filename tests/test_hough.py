@@ -9,6 +9,11 @@ from hough import __version__, analyse_file, run
 from hough.cli import _abort
 from hough.log_utils import start_logger_process
 
+@pytest.fixture(autouse=True)
+def print_newline():
+    # Makes output cleaner when progress bar is drawn
+    print()
+
 
 @pytest.mark.usefixtures("clean_sampledir")
 def test_version():
@@ -50,9 +55,9 @@ def test_vert():
     assert res[0] == "av-000.tif"
     assert res[1] == ""
     assert res[2] > -2 and res[2] <= 0.0
-    assert res[3] == ""
-    # assert(res[4] == 928)
-    # assert(res[5] == 1290)
+    assert res[3] < 1.0
+    # assert(res[4] == 464)
+    # assert(res[5] == 645)
 
 
 @pytest.mark.usefixtures("sampledir")

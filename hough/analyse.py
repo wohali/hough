@@ -4,19 +4,20 @@ Worker functions for a parallelizable skew analyser.
 import logging
 import os
 import signal
+import traceback
 
 import filetype
 import fitz
 import numpy as np
+import skimage.filters
 from imageio import imread, imwrite
 from skimage.color import rgb2gray
 from skimage.draw import line_aa
 from skimage.exposure import is_low_contrast
 from skimage.feature import canny
-from skimage.filters import threshold_otsu
 from skimage.morphology import binary_dilation
-from skimage.transform import probabilistic_hough_line, rescale
-from skimage.util import crop, img_as_ubyte, invert
+from skimage.transform import probabilistic_hough_line, rescale, downscale_local_mean
+from skimage.util import crop, img_as_ubyte, img_as_uint, invert
 
 import hough
 
@@ -30,8 +31,8 @@ def grey(x):
     return 0.3 if x else 0.0
 
 
-def bool_to_255(x):
-    return 255 if x else 0
+def bool_to_255(x): # pragma: no cover
+    return 255 if x else 0 
 
 
 def sum(a):
@@ -46,56 +47,62 @@ hough_theta_v = np.arange(np.deg2rad(-3.0), np.deg2rad(3.0), hough_prec)
 hough_theta_hv = np.concatenate((hough_theta_v, hough_theta_h))
 
 
-def hough_angles(pos, neg, orientation="row"):
+def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
+
     height, width = pos.shape
-    if orientation == "row":
+    if orientation == "H":
         axis = 1
-        length = int(width * 0.15)
         theta = hough_theta_h
-    else:
+        fp = np.ones((51, 1))
+        margin = int(width * 0.975)
+    elif orientation == "V":
         axis = 0
-        length = int(height * 0.15)
         theta = hough_theta_v
-    sums = np.apply_along_axis(sum, axis, neg)
+        fp = np.ones((1, 51))
+        margin = int(height * 0.025)
+    else:
+        raise RuntimeError(f"Unknown orientation {orientation}!")
+    length = int(height * 0.25)
+    blur = skimage.filters.median(neg, footprint=fp, mode="reflect")
+    sums = np.apply_along_axis(sum, axis, blur)
     line = sums.argmax(0)
+    wsz = max(hough.WINDOW_SIZE, margin)
 
     # Grab a +/- WINDOW-SIZE strip for evaluation. We've already cropped out the margins.
-    if orientation == "row":
+    if orientation == "H":
         cropped = pos[
-            max(line - hough.WINDOW_SIZE, 0) : min(
-                line + hough.WINDOW_SIZE, height
+            max(line - wsz, 0) : min(
+                line + wsz, height
             )  # noqa: E203
         ]
     else:
         cropped = pos[
             :,
-            max(line - hough.WINDOW_SIZE, 0) : min(
-                line + hough.WINDOW_SIZE, width
+            max(line - wsz, 0) : min(
+                line + wsz, width
             ),  # noqa: E203
         ]
-    edges = binary_dilation(canny(cropped, 2))
-    edges_grey = greyf(edges)
-
+    edges = binary_dilation(canny(cropped, sigma=2.0, mode="reflect", low_threshold=thresh[0], high_threshold=thresh[1]))
     lines = probabilistic_hough_line(edges, line_length=length, line_gap=2, theta=theta)
 
     angles = []
+
     for ((x0, y0), (x1, y1)) in lines:
         # Ensure line is moving rightwards/upwards
-        if orientation == "row":
+        if orientation == "H":
             k = 1 if x1 > x0 else -1
             offset = 0
+            horiz = True
         else:
             k = 1 if y1 > y0 else -1
             offset = 90
-        angles.append(offset - np.rad2deg(np.math.atan2(k * (y1 - y0), k * (x1 - x0))))
-        rr, cc, val = line_aa(c0=x0, r0=y0, c1=x1, r1=y1)
-        for k, v in enumerate(val):
-            edges_grey[rr[k], cc[k]] = (1 - v) * edges_grey[rr[k], cc[k]] + v
+            horiz = False
+        angles.append( (orientation, offset - np.rad2deg(np.math.atan2(k * (y1 - y0), k * (x1 - x0))), x0, y0, x1, y1))
 
-    return (angles, sums[line], edges_grey)
+    return (angles, edges)
 
 
-def _init_worker(queue, debug_arg, now_arg):
+def _init_worker(queue, debug_arg, now_arg): # pragma: no cover
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     log_utils.setup_queue_logging(queue)
     # this is a global only within the multiprocessing Pool workers, not in the main process.
@@ -135,25 +142,27 @@ def analyse_page(tuple):
         except ValueError as e:
             # Fall through; might be multi-page anyway...
             logger.debug(f"Single-page read of {f} failed: {e}")
+            if debug:
+                print(traceback.format_exc())
     if mimetype == "application/pdf":
         results = []
         doc = fitz.open(f)
-        imagelist = doc.getPageImageList(page)
-        # TODO: Correctly deal with multiple images on a page (in imagelist)
+        imagelist = doc.get_page_images(page)
         for item in imagelist:
             xref = item[0]
             smask = item[1]
             if smask == 0:
-                imgdict = doc.extractImage(xref)
-                logger.info(f"Processing {f} - page {page+1} - xref {xref}...")
+                imgdict = doc.extract_image(xref)
+                pagenum = float(f"{page + 1}.{xref}")
+                logger.info(f"Processing {f} - page {pagenum}...")
                 try:
                     image = imread(imgdict["image"])
-                    results.append(analyse_image(f, image, logger, pagenum=(page + 1)))
+                    results.append(analyse_image(f, image, logger, pagenum=pagenum))
                 except ValueError as e:
-                    logger.error(f"Skipping {f} - page {page+1} - xref {xref}: {e}")
+                    logger.error(f"Skipping {f} - page {pagenum}: {e}")
             else:
                 logger.error(
-                    f"Skipping process {f} - page {page+1} - image {xref} (smask=={smask})"
+                    f"Skipping process {f} - page {pagenum} (smask=={smask})"
                 )
         return results
     else:
@@ -178,7 +187,7 @@ def analyse_image(f, page, logger, pagenum=None):
         import datetime
 
         now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H%M%SZ")
-    pagenum = int(pagenum) if pagenum is not None else ""
+    pagenum = float(pagenum) if pagenum is not None else ""
 
     filename = os.path.basename(f)
 
@@ -193,49 +202,91 @@ def analyse_image(f, page, logger, pagenum=None):
     pos = crop(page, pagew // 25)
 
     if is_low_contrast(pos):
-        logger.debug(f"{filename}  p{pagenum} - low contrast - blank page?")
+        logger.debug(f"{filename} p{pagenum} - low contrast - blank page?")
         return (f, pagenum, "", "", pagew, pageh)
 
-    neg = invert(pos)
+    # TODO: tweak handle for 0.8 magic value below
+    thr = 255 * 0.8
+    p = np.clip(pos, 0, thr)
+    neg = thr - p
+    if debug:
+        imwrite(
+            f"debug/{now}/{filename}_{pagenum}_neg.png",
+            neg,
+        )
 
-    h_angles, v_sums_row, h_edges_grey = hough_angles(pos, neg, "row")
-    v_angles, h_sums_col, v_edges_grey = hough_angles(pos, neg, "column")
+    h_angles, h_edges = hough_angles(pos, neg, "H")
+    v_angles, v_edges = hough_angles(pos, neg, "V")
 
-    angles = []
+    if debug:
+        imwrite(f"debug/{now}/{filename}_{pagenum}_simple_dilation_h_edges.png",
+            img_as_ubyte(h_edges),
+        )
+        imwrite(f"debug/{now}/{filename}_{pagenum}_simple_dilation_v_edges.png",
+            img_as_ubyte(v_edges),
+        )
 
-    if h_angles and v_sums_row > h_sums_col:
-        angle = np.median(h_angles)
-        if debug:
-            imwrite(
-                f"debug/{now}/{filename}_{pagenum}_{angle}_hlines.png",
-                img_as_ubyte(h_edges_grey),
-            )
-        logger.debug(f"{filename} p{pagenum} Hough H angle: {angle} deg (median)")
-    elif v_angles:
-        angle = np.median(v_angles)
-        if debug:
-            imwrite(
-                f"debug/{now}/{filename}_{pagenum}_{angle}_vlines.png",
-                img_as_ubyte(v_edges_grey),
-            )
-        logger.debug(f"{filename} p{pagenum} Hough V angle: {angle} deg (median)")
-    else:
+    angles = h_angles + v_angles
+
+    if len(angles) == 0:
+        # TODO: more verbose
         if debug:
             imwrite(
                 f"debug/{now}/{filename}_{pagenum}_no_hlines.png",
-                img_as_ubyte(h_edges_grey),
+                img_as_ubyte(greyf(h_edges)),
             )
             imwrite(
                 f"debug/{now}/{filename}_{pagenum}_no_vlines.png",
-                img_as_ubyte(v_edges_grey),
+                img_as_ubyte(greyf(v_edges)),
             )
-        logger.debug(f"{filename} p{pagenum} failed peak sum Hough H/V")
+        h_angles, h_edges = hough_angles(pos, neg, "H", thresh=(100, 255))
+        v_angles, v_edges = hough_angles(pos, neg, "V", thresh=(100, 255))
+
+    if len(angles) > 0:
+        angle = np.median([x[1] for x in angles])
+        logger.debug(f"{filename} p{pagenum} Hough simple angle: {angle} deg (median)")
+        if debug:
+            hs = 0
+            vs = 0
+            h_edges_grey = greyf(h_edges)
+            v_edges_grey = greyf(v_edges)
+            for result in angles:
+                orn, _, x0, y0, x1, y1 = result
+                rr, cc, val = line_aa(c0=x0, r0=y0, c1=x1, r1=y1)
+                if orn == "H":
+                    hs += 1
+                    for k, v in enumerate(val):
+                        h_edges_grey[rr[k], cc[k]] = (1-v) * h_edges_grey[rr[k], cc[k]] + v
+                else:
+                    vs += 1
+                    for k, v in enumerate(val):
+                        v_edges_grey[rr[k], cc[k]] = (1-v) * v_edges_grey[rr[k], cc[k]] + v
+            if hs > 0:
+                imwrite(
+                    f"debug/{now}/{filename}_{pagenum}_hlines.png",
+                    img_as_ubyte(h_edges_grey),
+                )
+            if vs > 0:
+                imwrite(
+                    f"debug/{now}/{filename}_{pagenum}_vlines.png",
+                    img_as_ubyte(v_edges_grey),
+                )
+        angles = [x[1] for x in angles]
+
+    else:
+        if debug:
+            logger.debug(f"{filename} p{pagenum} failed peak sum Hough H/V")
 
         # We didn't find a good feature at the H or V sum peaks.
         # Let's brutally dilate everything and look for a vertical margin!
-        small = rescale(neg, 0.5, anti_aliasing=True)
-        t = threshold_otsu(small)
-        dilated = binary_dilation(small > t, np.ones((60, 60)))
+        height, width = neg.shape
+        if height * width > int(1E6):
+            print("shrinking")
+            small = downscale_local_mean(neg, (2, 2))
+        else:
+            small = neg
+        t = skimage.filters.threshold_otsu(small)
+        dilated = binary_dilation(small > t, np.ones((60,60)))
 
         edges = canny(dilated, 3)
         edges_grey = greyf(edges)
@@ -262,21 +313,26 @@ def analyse_image(f, page, logger, pagenum=None):
                     edges_grey[rr[k], cc[k]] = (1 - v) * edges_grey[rr[k], cc[k]] + v
 
         if angles:
-            angle = np.mean(angles)
+            angle = np.median(angles)
+            logger.debug(
+                f"{filename} p{pagenum} dilated Hough angle: {angle} deg (median)"
+            )
             if debug:
                 imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_{angle}_lines_vertical.png",
-                    img_as_ubyte(edges_grey),
-                )
-                imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_{angle}_lines_verticaldilated.png",
+                    f"debug/{now}/{filename}_{pagenum}_dilated.png",
                     bool_to_255f(img_as_ubyte(dilated)),
                 )
-            logger.debug(
-                f"{filename} p{pagenum} Hough angle V: {angle} deg (mean)  {np.median(angles)} deg (median)"
-            )
+                imwrite(
+                    f"debug/{now}/{filename}_{pagenum}_{angle}_lines.png",
+                    img_as_ubyte(edges_grey),
+                )
+                #imwrite(
+                #    f"debug/{now}/{filename}_{pagenum}_{angle}_lines_verticaldilated.png",
+                #    bool_to_255f(img_as_ubyte(dilated)),
+                #)
         else:
             angle = None
+            logger.debug(f"{filename} p{pagenum} failed dilated Hough V")
             if debug:
                 imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilated.png",
@@ -290,7 +346,6 @@ def analyse_image(f, page, logger, pagenum=None):
                     f"debug/{now}/{filename}_{pagenum}_dilate_edges.png",
                     bool_to_255f(img_as_ubyte(edges)),
                 )
-            logger.debug(f"{filename} p{pagenum} failed dilated Hough V")
 
     return (
         f,
