@@ -4,4 +4,3 @@ disable_warnings = ["module-not-imported", "no-data-collected", "module-not-meas
 
 [report]
 exclude_lines = [ "pragma: no cover", "raise AssertionError", "raise NotImplementedError", "except KeyboardInterrupt", "if __name__ == .__main__.:", ]
-

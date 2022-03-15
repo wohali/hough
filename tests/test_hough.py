@@ -9,6 +9,7 @@ from hough import __version__, analyse_file, run
 from hough.cli import _abort
 from hough.log_utils import start_logger_process
 
+
 @pytest.fixture(autouse=True)
 def print_newline():
     # Makes output cleaner when progress bar is drawn

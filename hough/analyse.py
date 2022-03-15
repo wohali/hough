@@ -296,7 +296,6 @@ def analyse_image(f, page, logger, pagenum=None):
         # Let's brutally dilate everything and look for a vertical margin!
         height, width = neg.shape
         if height * width > int(1e6):
-            print("shrinking")
             small = downscale_local_mean(neg, (2, 2))
         else:
             small = neg
