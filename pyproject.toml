@@ -63,7 +63,7 @@ pytest-cov = "^3.0.0"
 pytest-mock = "^3.1.0"
 tox = "^3.14.6"
 black = "^22.1.0"
-pylint = "^2.12.2"
+pylint = "^2.13.2"
 
 [tool.poetry.scripts]
 hough = 'hough.cli:run'
