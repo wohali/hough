@@ -129,7 +129,7 @@ testing = ["covdefaults (>=1.2.0)", "coverage (>=4)", "pytest (>=4)", "pytest-co
 
 [[package]]
 name = "filetype"
-version = "1.0.10"
+version = "1.0.12"
 description = "Infer file type and MIME type of any file/buffer. No external dependencies."
 category = "main"
 optional = false
@@ -739,8 +739,8 @@ filelock = [
     {file = "filelock-3.6.0.tar.gz", hash = "sha256:9cd540a9352e432c7246a48fe4e8712b10acb1df2ad1f30e8c070b82ae1fed85"},
 ]
 filetype = [
-    {file = "filetype-1.0.10-py2.py3-none-any.whl", hash = "sha256:63fbe6e818a3d1cfac1d62b196574a7a4b7fc8e06a6c500d53577c018ef127d9"},
-    {file = "filetype-1.0.10.tar.gz", hash = "sha256:323a13500731b6c65a253bc3930bbce9a56dfba71e90b60ffd968ab69d9ae937"},
+    {file = "filetype-1.0.12-py2.py3-none-any.whl", hash = "sha256:1e109789256786ebc878f189f31dd0b32ecbb192508cc6f376d8607e5f61ea1c"},
+    {file = "filetype-1.0.12.tar.gz", hash = "sha256:7ffc103209608903ac432f214ce7d60235b1cbee2bd9a7ddd7a9cdce80567c20"},
 ]
 identify = [
     {file = "identify-2.4.11-py2.py3-none-any.whl", hash = "sha256:fd906823ed1db23c7a48f9b176a1d71cb8abede1e21ebe614bac7bdd688d9213"},
