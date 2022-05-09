@@ -148,26 +148,30 @@ license = ["ukkonen"]
 
 [[package]]
 name = "imageio"
-version = "2.16.1"
+version = "2.19.1"
 description = "Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
-numpy = ">=1.20.0"
+numpy = "*"
 pillow = ">=8.3.2"
 
 [package.extras]
+all-plugins = ["astropy", "av", "imageio-ffmpeg", "opencv-python", "psutil", "tifffile"]
+all-plugins-pypy = ["av", "imageio-ffmpeg", "psutil", "tifffile"]
 build = ["wheel"]
 dev = ["invoke", "pytest", "pytest-cov", "fsspec", "black", "flake8"]
 docs = ["sphinx", "numpydoc", "pydata-sphinx-theme"]
 ffmpeg = ["imageio-ffmpeg", "psutil"]
 fits = ["astropy"]
-full = ["astropy", "black", "flake8", "fsspec", "gdal", "imageio-ffmpeg", "invoke", "itk", "numpydoc", "psutil", "pydata-sphinx-theme", "pytest", "pytest-cov", "sphinx", "tifffile", "wheel"]
+full = ["astropy", "av", "black", "flake8", "fsspec", "gdal", "imageio-ffmpeg", "invoke", "itk", "numpydoc", "opencv-python", "psutil", "pydata-sphinx-theme", "pytest", "pytest-cov", "sphinx", "tifffile", "wheel"]
 gdal = ["gdal"]
 itk = ["itk"]
 linting = ["black", "flake8"]
+opencv = ["opencv-python"]
+pyav = ["av"]
 test = ["invoke", "pytest", "pytest-cov", "fsspec"]
 tifffile = ["tifffile"]
 
@@ -747,8 +751,8 @@ identify = [
     {file = "identify-2.4.11.tar.gz", hash = "sha256:2986942d3974c8f2e5019a190523b0b0e2a07cb8e89bf236727fb4b26f27f8fd"},
 ]
 imageio = [
-    {file = "imageio-2.16.1-py3-none-any.whl", hash = "sha256:d8d17c59b6f5f3b350bbbe346e7cb7dda0399b1881d93ad01cb29b5acdb24c42"},
-    {file = "imageio-2.16.1.tar.gz", hash = "sha256:7f123cb23a77ac5abe8ed4e7ad6a60831a82de2c5d123463dcf1d4278c4779d2"},
+    {file = "imageio-2.19.1-py3-none-any.whl", hash = "sha256:cd5b6ac2f4111c76f08d33b86a4cb987520f1d6ec2183e8a2656ace8d026a38e"},
+    {file = "imageio-2.19.1.tar.gz", hash = "sha256:d63600626b80ebe1ec9614c33434879c754dea328717f4e2cebe88f156fa1a9c"},
 ]
 importlib-metadata = [
     {file = "importlib_metadata-4.11.3-py3-none-any.whl", hash = "sha256:1208431ca90a8cca1a6b8af391bb53c1a2db74e5d1cef6ddced95d4b2062edc6"},
