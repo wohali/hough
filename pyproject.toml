@@ -44,7 +44,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-docopt-ng = "^0.7.2"
+docopt-ng = ">=0.7.2,<0.9.0"
 imageio = "^2.8.0"
 numpy = "^1.18.2"
 scikit-image = "^0.19"
