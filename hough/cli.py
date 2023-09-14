@@ -145,7 +145,7 @@ def run(argv=sys.argv[1:]):
     if len(argv) == 0:
         print(__doc__.strip("\n"))
         return 0
-    arguments = docopt(__doc__, argv=argv, version=hough.__version__, more_magic=True)
+    arguments = docopt(__doc__, argv=argv, version=hough.__version__)
     arguments = _process_args(arguments)
     if arguments == -1:
         return -1

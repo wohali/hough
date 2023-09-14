@@ -8,9 +8,9 @@ import traceback
 
 import filetype
 import fitz
+import imageio.v3 as iio
 import numpy as np
 import skimage.filters
-from imageio import imread, imwrite
 from skimage.color import rgb2gray
 from skimage.draw import line_aa
 from skimage.exposure import is_low_contrast
@@ -137,6 +137,7 @@ def get_pages(f):
         pdf = fitz.open(f)
         return [(f, kind.mime, x) for x in range(len(pdf))]
     # TODO: Add support for multi-page TIFFs here via
+    #   https://imageio.readthedocs.io/en/stable/reference/userapi.html#reading-images
     #   https://imageio.readthedocs.io/en/stable/userapi.html#imageio.mimread
     else:
         return [(f, kind.mime, None)]
@@ -148,7 +149,7 @@ def analyse_page(tuple):
     if page is None:
         # not a known multi-image file
         try:
-            image = imread(f)
+            image = iio.imread(f)
             logger.info(f"Processing {f}...")
             return [analyse_image(f, image, logger)]
         except ValueError as e:
@@ -156,6 +157,12 @@ def analyse_page(tuple):
             logger.debug(f"Single-page read of {f} failed: {e}")
             if debug:
                 print(traceback.format_exc())
+        except OSError as e:
+            # imageio v3 returns OSError if the type is unknown
+            if "Could not find a backend" in str(e):
+                logger.debug(f"Read of {f} failed: {e}")
+                if debug:
+                    print(traceback.format_exc())
     if mimetype == "application/pdf":
         results = []
         doc = fitz.open(f)
@@ -168,7 +175,7 @@ def analyse_page(tuple):
                 pagenum = float(f"{page + 1}.{xref}")
                 logger.info(f"Processing {f} - page {pagenum}...")
                 try:
-                    image = imread(imgdict["image"])
+                    image = iio.imread(imgdict["image"])
                     results.append(analyse_image(f, image, logger, pagenum=pagenum))
                 except ValueError as e:
                     logger.error(f"Skipping {f} - page {pagenum}: {e}")
@@ -177,6 +184,7 @@ def analyse_page(tuple):
         return results
     else:
         # TODO: support multi-image TIFF with
+        #   https://imageio.readthedocs.io/en/stable/reference/userapi.html#reading-images
         #   https://imageio.readthedocs.io/en/stable/userapi.html#imageio.mimread
         logger.error(f"Cannot process {f}: unknown file format")
         return []
@@ -220,19 +228,19 @@ def analyse_image(f, page, logger, pagenum=None):
     p = np.clip(pos, 0, thr)
     neg = thr - p
     if debug:
-        imwrite(
-            f"debug/{now}/{filename}_{pagenum}_neg.png", neg,
+        iio.imwrite(
+            f"debug/{now}/{filename}_{pagenum}_neg.tiff", neg,
         )
 
     h_angles, h_edges = hough_angles(pos, neg, "H")
     v_angles, v_edges = hough_angles(pos, neg, "V")
 
     if debug:
-        imwrite(
+        iio.imwrite(
             f"debug/{now}/{filename}_{pagenum}_simple_dilation_h_edges.png",
             img_as_ubyte(h_edges),
         )
-        imwrite(
+        iio.imwrite(
             f"debug/{now}/{filename}_{pagenum}_simple_dilation_v_edges.png",
             img_as_ubyte(v_edges),
         )
@@ -242,11 +250,11 @@ def analyse_image(f, page, logger, pagenum=None):
     if len(angles) == 0:
         # TODO: more verbose
         if debug:
-            imwrite(
+            iio.imwrite(
                 f"debug/{now}/{filename}_{pagenum}_no_hlines.png",
                 img_as_ubyte(greyf(h_edges)),
             )
-            imwrite(
+            iio.imwrite(
                 f"debug/{now}/{filename}_{pagenum}_no_vlines.png",
                 img_as_ubyte(greyf(v_edges)),
             )
@@ -277,12 +285,12 @@ def analyse_image(f, page, logger, pagenum=None):
                             rr[k], cc[k]
                         ] + v
             if hs > 0:
-                imwrite(
+                iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_hlines.png",
                     img_as_ubyte(h_edges_grey),
                 )
             if vs > 0:
-                imwrite(
+                iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_vlines.png",
                     img_as_ubyte(v_edges_grey),
                 )
@@ -332,15 +340,15 @@ def analyse_image(f, page, logger, pagenum=None):
                 f"{filename} p{pagenum} dilated Hough angle: {angle} deg (median)"
             )
             if debug:
-                imwrite(
+                iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilated.png",
                     bool_to_255f(img_as_ubyte(dilated)),
                 )
-                imwrite(
+                iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_{angle}_lines.png",
                     img_as_ubyte(edges_grey),
                 )
-                # imwrite(
+                # iio.imwrite(
                 #    f"debug/{now}/{filename}_{pagenum}_{angle}_lines_verticaldilated.png",
                 #    bool_to_255f(img_as_ubyte(dilated)),
                 # )
@@ -348,15 +356,15 @@ def analyse_image(f, page, logger, pagenum=None):
             angle = None
             logger.debug(f"{filename} p{pagenum} failed dilated Hough V")
             if debug:
-                imwrite(
+                iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilated.png",
                     bool_to_255f(img_as_ubyte(dilated)),
                 )
-                imwrite(
+                iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilate_edges_grey.png",
                     img_as_ubyte(edges_grey),
                 )
-                imwrite(
+                iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilate_edges.png",
                     bool_to_255f(img_as_ubyte(edges)),
                 )
