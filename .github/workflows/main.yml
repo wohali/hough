@@ -72,6 +72,8 @@ jobs:
         run: poetry run pytest -q tests
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   MacOS:
     needs: Linting
@@ -107,6 +109,8 @@ jobs:
         run: poetry run pytest -q tests
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   Windows:
     needs: Linting
@@ -145,3 +149,5 @@ jobs:
           poetry run pytest -q tests
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
