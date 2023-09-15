@@ -6,8 +6,8 @@ import os
 
 import filetype
 import fitz
-from imageio import imread, imwrite
-from scipy.ndimage import interpolation
+import imageio.v3 as iio
+from scipy import ndimage
 
 
 def rotate(imagelist, out, generator=False):
@@ -30,9 +30,9 @@ def rotate(imagelist, out, generator=False):
         if not page:
             # single-image file, not a container
             logger.info(f"Rotating {filename}...")
-            img = imread(image[0])
-            fixed = interpolation.rotate(img, -angle, mode="nearest", reshape=False)
-            imwrite(f"{out}/{filen}{ext}", fixed)
+            img = iio.imread(image[0])
+            fixed = ndimage.rotate(img, -angle, mode="nearest", reshape=False)
+            iio.imwrite(f"{out}/{filen}{ext}", fixed)
         else:
             if kind and kind.mime == "application/pdf":
                 doc = fitz.open(image[0])
@@ -47,12 +47,14 @@ def rotate(imagelist, out, generator=False):
                             f"Rotating {filename} - page {page} - xref {xref}..."
                         )
                         try:
-                            img = imread(imgdict["image"])
+                            img = iio.imread(imgdict["image"])
                             imgext = imgdict["ext"]
-                            fixed = interpolation.rotate(
+                            fixed = ndimage.rotate(
                                 img, -angle, mode="nearest", reshape=False
                             )
-                            imgbytes = imwrite("<bytes>", fixed, format=imgext)
+                            imgbytes = iio.imwrite(
+                                "<bytes>", fixed, extension=("." + imgext)
+                            )
                             imgdoc = fitz.open(stream=imgbytes, filetype=imgext)
                             rect = imgdoc[0].rect
                             pdfbytes = imgdoc.convert_to_pdf()
@@ -62,11 +64,13 @@ def rotate(imagelist, out, generator=False):
                             page.show_pdf_page(rect, img_pdf, 0)
                         except ValueError as e:
                             logger.error(
-                                f"Skipping rotating {filename} - page {page} - xref {xref}: {e}"
+                                f"Skipping rotating {filename} - "
+                                f"page {page} - xref {xref}: {e}"
                             )
                     else:
                         logger.error(
-                            f"Skipping process {filename} - page {page} - image {xref} (smask=={smask})"
+                            f"Skipping process {filename} - page {page} - "
+                            f"image {xref} (smask=={smask})"
                         )
             # TODO: deal with other multi-image formats
             else:

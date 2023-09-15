@@ -45,7 +45,10 @@ def _setup_logger_process_logging(log_level, results_file):
         "formatters": {
             "detailed": {
                 "class": "logging.Formatter",
-                "format": "%(asctime)s %(name)-8s %(levelname)-8s %(processName)-25s %(message)s",
+                "format": (
+                    "%(asctime)s %(name)-8s %(levelname)-8s "
+                    "%(processName)-25s %(message)s"
+                ),
             },
             "raw": {"class": "logging.Formatter", "format": "%(message)s"},
         },

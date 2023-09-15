@@ -2,6 +2,7 @@
 Worker functions for a parallelizable skew analyser.
 """
 import logging
+import math
 import os
 import signal
 import traceback
@@ -16,12 +17,8 @@ from skimage.draw import line_aa
 from skimage.exposure import is_low_contrast
 from skimage.feature import canny
 from skimage.morphology import binary_dilation
-from skimage.transform import (
-    downscale_local_mean,
-    probabilistic_hough_line,
-    rescale,
-)
-from skimage.util import crop, img_as_ubyte, img_as_uint, invert
+from skimage.transform import downscale_local_mean, probabilistic_hough_line
+from skimage.util import crop, img_as_bool, img_as_ubyte
 
 import hough
 
@@ -52,7 +49,6 @@ hough_theta_hv = np.concatenate((hough_theta_v, hough_theta_h))
 
 
 def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
-
     height, width = pos.shape
     if orientation == "H":
         axis = 1
@@ -77,7 +73,8 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
         cropped = pos[max(line - wsz, 0) : min(line + wsz, height)]  # noqa: E203
     else:
         cropped = pos[
-            :, max(line - wsz, 0) : min(line + wsz, width),  # noqa: E203
+            :,
+            max(line - wsz, 0) : min(line + wsz, width),  # noqa: E203
         ]
     edges = binary_dilation(
         canny(
@@ -92,7 +89,7 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
 
     angles = []
 
-    for ((x0, y0), (x1, y1)) in lines:
+    for (x0, y0), (x1, y1) in lines:
         # Ensure line is moving rightwards/upwards
         if orientation == "H":
             k = 1 if x1 > x0 else -1
@@ -103,7 +100,7 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
         angles.append(
             (
                 orientation,
-                offset - np.rad2deg(np.math.atan2(k * (y1 - y0), k * (x1 - x0))),
+                offset - np.rad2deg(math.atan2(k * (y1 - y0), k * (x1 - x0))),
                 x0,
                 y0,
                 x1,
@@ -117,7 +114,7 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
 def _init_worker(queue, debug_arg, now_arg):  # pragma: no cover
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     log_utils.setup_queue_logging(queue)
-    # this is a global only within the multiprocessing Pool workers, not in the main process.
+    # global is only in the multiprocessing Pool workers, not in main process.
     global debug, now
     debug = debug_arg
     now = now_arg
@@ -229,7 +226,8 @@ def analyse_image(f, page, logger, pagenum=None):
     neg = thr - p
     if debug:
         iio.imwrite(
-            f"debug/{now}/{filename}_{pagenum}_neg.tiff", neg,
+            f"debug/{now}/{filename}_{pagenum}_neg.tiff",
+            neg,
         )
 
     h_angles, h_edges = hough_angles(pos, neg, "H")
@@ -313,10 +311,13 @@ def analyse_image(f, page, logger, pagenum=None):
         edges = canny(dilated, 3)
         edges_grey = greyf(edges)
         lines = probabilistic_hough_line(
-            edges, line_length=int(pageh * 0.04), line_gap=6, theta=hough_theta_hv,
+            edges,
+            line_length=int(pageh * 0.04),
+            line_gap=6,
+            theta=hough_theta_hv,
         )
 
-        for ((x_0, y_0), (x_1, y_1)) in lines:
+        for (x_0, y_0), (x_1, y_1) in lines:
             if abs(x_1 - x_0) > abs(y_1 - y_0):
                 # angle is <= π/4 from horizontal or vertical
                 _, x0, y0, x1, y1 = "H", x_0, y_0, x_1, y_1
@@ -324,7 +325,7 @@ def analyse_image(f, page, logger, pagenum=None):
                 _, x0, y0, x1, y1 = "V", y_0, -x_0, y_1, -x_1
             # flip angle so that X delta is positive (East quadrants).
             k = 1 if x1 > x0 else -1
-            a = np.rad2deg(np.math.atan2(k * (y1 - y0), k * (x1 - x0)))
+            a = np.rad2deg(math.atan2(k * (y1 - y0), k * (x1 - x0)))
 
             # Zero angles are suspicious -- could be a cropping margin.
             # If not, they don't add information anyway.
@@ -342,7 +343,8 @@ def analyse_image(f, page, logger, pagenum=None):
             if debug:
                 iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilated.png",
-                    bool_to_255f(img_as_ubyte(dilated)),
+                    # bool_to_255f(img_as_ubyte(dilated)),
+                    img_as_bool(dilated),
                 )
                 iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_{angle}_lines.png",
@@ -358,7 +360,8 @@ def analyse_image(f, page, logger, pagenum=None):
             if debug:
                 iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilated.png",
-                    bool_to_255f(img_as_ubyte(dilated)),
+                    # bool_to_255f(img_as_ubyte(dilated)),
+                    img_as_bool(dilated),
                 )
                 iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilate_edges_grey.png",
@@ -366,7 +369,8 @@ def analyse_image(f, page, logger, pagenum=None):
                 )
                 iio.imwrite(
                     f"debug/{now}/{filename}_{pagenum}_dilate_edges.png",
-                    bool_to_255f(img_as_ubyte(edges)),
+                    # bool_to_255f(img_as_ubyte(edges)),
+                    img_as_bool(edges),
                 )
 
     return (

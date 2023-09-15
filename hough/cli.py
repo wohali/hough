@@ -53,7 +53,6 @@ Options:
 import csv
 import datetime
 import logging
-import multiprocessing
 import os
 import sys
 import time
@@ -157,11 +156,15 @@ def run(argv=sys.argv[1:]):
     results = []
 
     # The pool that launched 1,000 Houghs...
-    # We do it this way, not with a map, until https://github.com/tqdm/tqdm/issues/548 is fixed
+    # can't use a map until https://github.com/tqdm/tqdm/issues/548 is fixed
     with Pool(
         processes=arguments.workers,
         initializer=hough.analyse._init_worker,
-        initargs=(logq, arguments.debug, arguments.now,),
+        initargs=(
+            logq,
+            arguments.debug,
+            arguments.now,
+        ),
     ) as p:
         try:
             log_utils.setup_queue_logging(logq)
@@ -198,7 +201,8 @@ def run(argv=sys.argv[1:]):
     logger_csv = logging.getLogger("csv")
     if not os.path.exists(arguments.results) or os.path.getsize(arguments.results) == 0:
         logger_csv.info(
-            '"Input File","Page Number","Computed angle","Variance of computed angles","Image width (px)","Image height (px)"'
+            '"Input File","Page Number","Computed angle",'
+            '"Variance of computed angles","Image width (px)","Image height (px)"'
         )
 
     read_csv = False
@@ -241,7 +245,12 @@ def run(argv=sys.argv[1:]):
             if not read_csv:
                 logger_csv.info(
                     '"{}",{},{},{},{},{}'.format(
-                        fname, pagenum, angle, variance, pagew, pageh,
+                        fname,
+                        pagenum,
+                        angle,
+                        variance,
+                        pagew,
+                        pageh,
                     )
                 )
 
