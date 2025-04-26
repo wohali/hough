@@ -11,12 +11,14 @@ import filetype
 import fitz
 import imageio.v3 as iio
 import numpy as np
+import scipy
 import skimage.filters
 from skimage.color import rgb2gray
 from skimage.draw import line_aa
 from skimage.exposure import is_low_contrast
 from skimage.feature import canny
-from skimage.morphology import binary_dilation
+from skimage.filters.rank import maximum
+from skimage.morphology import binary_dilation, footprint_rectangle
 from skimage.transform import downscale_local_mean, probabilistic_hough_line
 from skimage.util import crop, img_as_bool, img_as_ubyte
 
@@ -26,6 +28,11 @@ from . import log_utils
 
 
 # numpy's little helpers
+
+
+def swap_bgr_rgb(x):
+    # https://scikit-image.org/docs/stable/user_guide/data_types.html#converting-bgr-to-rgb-or-vice-versa
+    return x[:, :, ::-1]
 
 
 def grey(x):
@@ -300,13 +307,26 @@ def analyse_image(f, page, logger, pagenum=None):
 
         # We didn't find a good feature at the H or V sum peaks.
         # Let's brutally dilate everything and look for a vertical margin!
+
         height, width = neg.shape
         if height * width > int(1e6):
             small = downscale_local_mean(neg, (2, 2))
         else:
             small = neg
         t = skimage.filters.threshold_otsu(small)
-        dilated = binary_dilation(small > t, np.ones((60, 60)))
+        # see https://scikit-image.org/docs/stable/auto_examples/numpy_operations/plot_footprint_decompositions.html#sphx-glr-auto-examples-numpy-operations-plot-footprint-decompositions-py
+        # square(11, decomposition="separable")
+        # for sq, num_reps in square(60, decomposition="sequence"):
+        #    for x in range(num_reps):
+        #        dilated = binary_dilation(small > t, sq)
+        dilated = binary_dilation(
+            small > t, footprint_rectangle((60, 60), decomposition="separable")
+        )
+        # see https://github.com/spinalcordtoolbox/spinalcordtoolbox/issues/4020#issuecomment-1409335950
+        # dilated = maximum(small > t, np.ones((60, 60)))
+        # import cv2 as cv
+        # cuMat = cv.cuda_GpuMat()
+        # cv_image = img_as_ubyte(small > t)
 
         edges = canny(dilated, 3)
         edges_grey = greyf(edges)

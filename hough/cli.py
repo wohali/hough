@@ -48,6 +48,8 @@ Options:
   -r --rotate                   rotates the files passed on the command
                                 line, or if none given, those listed
                                 in the results file.
+  -c --opencv                   Use OpenCV for binary dilation
+                                (requires CUDA support to be installed)
 """
 
 import csv
