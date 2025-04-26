@@ -323,18 +323,18 @@ license = ["ukkonen"]
 
 [[package]]
 name = "imageio"
-version = "2.32.0"
+version = "2.33.1"
 description = "Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "imageio-2.32.0-py3-none-any.whl", hash = "sha256:70e63a8955fb08242c9cbc4cdc40728ab892f76955b99cc6a0c5f304b4b84970"},
-    {file = "imageio-2.32.0.tar.gz", hash = "sha256:e425ad36c605308d9ea6d93eda7b0987926059b8b86220e142a599a7975128dd"},
+    {file = "imageio-2.33.1-py3-none-any.whl", hash = "sha256:c5094c48ccf6b2e6da8b4061cd95e1209380afafcbeae4a4e280938cce227e1d"},
+    {file = "imageio-2.33.1.tar.gz", hash = "sha256:78722d40b137bd98f5ec7312119f8aea9ad2049f76f434748eb306b6937cc1ce"},
 ]
 
 [package.dependencies]
 numpy = "*"
-pillow = ">=8.3.2,<10.1.0"
+pillow = ">=8.3.2"
 
 [package.extras]
 all-plugins = ["astropy", "av", "imageio-ffmpeg", "pillow-heif", "psutil", "tifffile"]
@@ -346,9 +346,9 @@ ffmpeg = ["imageio-ffmpeg", "psutil"]
 fits = ["astropy"]
 full = ["astropy", "av", "black", "flake8", "fsspec[github]", "gdal", "imageio-ffmpeg", "itk", "numpydoc", "pillow-heif", "psutil", "pydata-sphinx-theme", "pytest", "pytest-cov", "sphinx (<6)", "tifffile", "wheel"]
 gdal = ["gdal"]
-heif = ["pillow-heif"]
 itk = ["itk"]
 linting = ["black", "flake8"]
+pillow-heif = ["pillow-heif"]
 pyav = ["av"]
 test = ["fsspec[github]", "pytest", "pytest-cov"]
 tifffile = ["tifffile"]
