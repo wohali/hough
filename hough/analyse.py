@@ -22,8 +22,6 @@ from skimage.morphology import binary_dilation, footprint_rectangle
 from skimage.transform import downscale_local_mean, probabilistic_hough_line
 from skimage.util import crop, img_as_bool, img_as_ubyte
 
-import hough
-
 from . import log_utils
 
 
@@ -73,7 +71,7 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
     blur = skimage.filters.median(neg, footprint=fp, mode="reflect")
     sums = np.apply_along_axis(sum, axis, blur)
     line = sums.argmax(0)
-    wsz = max(hough.WINDOW_SIZE, margin)
+    wsz = max(windowsize, margin)
 
     # Grab a +/- WINDOW-SIZE strip for evaluation. We've already cropped out the margins.
     if orientation == "H":
@@ -118,13 +116,14 @@ def hough_angles(pos, neg, orientation="H", thresh=(None, None)):
     return (angles, edges)
 
 
-def _init_worker(queue, debug_arg, now_arg):  # pragma: no cover
+def _init_worker(queue, debug_arg, now_arg, wsz_arg):  # pragma: no cover
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     log_utils.setup_queue_logging(queue)
     # global is only in the multiprocessing Pool workers, not in main process.
-    global debug, now
+    global debug, now, windowsize
     debug = debug_arg
     now = now_arg
+    windowsize = wsz_arg
 
 
 def get_pages(f):
@@ -207,6 +206,8 @@ def analyse_image(f, page, logger, pagenum=None):
         debug = False
     if "now" not in globals():
         import datetime
+    if "windowsize" not in globals():
+        windowsize = 150
 
         now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H%M%SZ")
     pagenum = float(pagenum) if pagenum is not None else ""

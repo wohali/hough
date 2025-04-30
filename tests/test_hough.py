@@ -33,7 +33,7 @@ def test_null_histogram():
 
 
 @pytest.mark.usefixtures("sampledir")
-def test_abort():
+def test_abort(tmpdir):
     logq, listener = start_logger_process(logging.DEBUG, "null.csv")
     with Pool(processes=2) as p:
         _abort(p, logq, listener)
@@ -42,6 +42,7 @@ def test_abort():
     with Pool(processes=2) as p:
         _abort(p, None, None)
     _abort(123, 456, "abc")
+    os.remove("null.csv")
 
 
 @pytest.mark.usefixtures("sampledir")

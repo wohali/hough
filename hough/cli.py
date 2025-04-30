@@ -50,6 +50,7 @@ Options:
                                 in the results file.
   -c --opencv                   Use OpenCV for binary dilation
                                 (requires CUDA support to be installed)
+  -s --window-size              Window size for hough evaluation [default: 150]
 """
 
 import csv
@@ -166,6 +167,7 @@ def run(argv=sys.argv[1:]):
             logq,
             arguments.debug,
             arguments.now,
+            arguments.window_size,
         ),
     ) as p:
         try:
@@ -187,7 +189,7 @@ def run(argv=sys.argv[1:]):
                     desc="Analysis: ",
                 ) as pbar:
                     for i, result in enumerate(
-                        p.imap_unordered(hough.analyse_page, pages)
+                        p.imap_unordered(hough.analyse_page, pages, arguments.workers)
                     ):
                         pbar.update()
                         results.append(result)
