@@ -59,11 +59,12 @@ import logging
 import os
 import sys
 import time
-from multiprocessing import cpu_count, freeze_support
+from multiprocessing import cpu_count, freeze_support, set_start_method
 from multiprocessing.pool import Pool
 
+import cupy
 from docopt import docopt
-from tqdm import tqdm
+from tqdm import tqdm  # TODO: consider rich?
 
 import hough
 
@@ -144,6 +145,8 @@ def _process_args(arguments):
 
 
 def run(argv=sys.argv[1:]):
+    # mandatory for the GPU backend I'm afraid, and 'forkserver' is not Windows compatible.
+    set_start_method("spawn")
     if len(argv) == 0:
         print(__doc__.strip("\n"))
         return 0
@@ -160,6 +163,7 @@ def run(argv=sys.argv[1:]):
 
     # The pool that launched 1,000 Houghs...
     # can't use a map until https://github.com/tqdm/tqdm/issues/548 is fixed
+    # consider https://gist.github.com/ltalirz/9220946c5c9fd920a1a2d81ce7375c47 instead?
     with Pool(
         processes=arguments.workers,
         initializer=hough.analyse._init_worker,
@@ -188,13 +192,12 @@ def run(argv=sys.argv[1:]):
                     unit="pg",
                     desc="Analysis: ",
                 ) as pbar:
+                    # TODO: is arguments.workers the correct chunk size? it affects the progress bar, too.
                     for i, result in enumerate(
                         p.imap_unordered(hough.analyse_page, pages, arguments.workers)
                     ):
                         pbar.update()
                         results.append(result)
-            p.close()
-            p.join()
         except KeyboardInterrupt:
             import sys
 
@@ -258,6 +261,7 @@ def run(argv=sys.argv[1:]):
                     )
                 )
 
+    # TODO: parallelise this
     if arguments.rotate:
         with tqdm(
             total=num_pages,
@@ -285,5 +289,4 @@ def run(argv=sys.argv[1:]):
 
 
 if __name__ == "__main__":
-    freeze_support()
     exit(run())
