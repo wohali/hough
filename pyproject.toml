@@ -28,8 +28,8 @@
 
 [tool.poetry]
 name = "hough"
-version = "0.2.7"
-description = "Skew detection and correction in scanned images"
+version = "0.3.0.dev1"
+description = "Skew detection and correction in scanned images."
 authors = ["qu1j0t3 <support@telegraphics.com.au>", "Joan Touzet <wohali@apache.org>"]
 maintainers = ["Joan Touzet <wohali@apache.org>"]
 repository = "https://github.com/wohali/hough"
@@ -71,10 +71,12 @@ dependencies = [
     "importlib_metadata>=6.8.0",
     "virtualenv (>=20.30.0,<21.0.0)",
     "opencv-python (>=4.11.0.86) ; extra != 'cuda'",
+    "cyclopts (>=3.14.1,<4.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
 ]
 
 [project.scripts]
-hough = 'hough.cli:run'
+hough = 'hough.main:main'
 
 [project.optional-dependencies]
 cuda = [
@@ -188,6 +190,7 @@ addopts = "-x -v --capture=tee-sys --cov=hough --cov-report=html --cov-report=te
 
 [tool.isort]
 known_third_party = ["docopt", "filetype", "fitz", "imageio", "numpy", "pytest", "scipy", "skimage", "termplotlib", "tqdm"]
+skip = ["__init__.py"]
 multi_line_output = 3
 lines_after_imports = 2
 force_grid_wrap = 0

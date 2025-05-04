@@ -1,20 +1,25 @@
 import math
+import os
 
 import numpy as np
 import termplotlib as tpl
 
+from .utils import load_csv
 
-def histogram(results):
+
+def histogram(results: str):
+    # load the file
+    data = load_csv(results)
     res = []
-    for result in results:
-        for image in result:
-            if type(image[2]) is not str:
-                res.append(abs(float(image[2])))
+    for r in data:
+        for image in r:
+            if type(image[2]) is float:
+                res.append(abs(image[2]))
     if not res:
         print("\nNo angles found, so no histogram.")
         return
-    counts, bin_edges = np.histogram(res, bins=20, range=(0, int(math.ceil(max(res)))))
 
+    counts, bin_edges = np.histogram(res, bins=20, range=(0, int(math.ceil(max(res)))))
     labels = [
         "{:.2f}° - {:.2f}°".format(bin_edges[k], bin_edges[k + 1])
         for k in range(len(bin_edges) - 1)
