@@ -12,37 +12,16 @@ repos:
       - id: check-toml
       - id: check-yaml
       - id: end-of-file-fixer
-        exclude: "^.flakeheaven_cache/.*$"
       - id: forbid-submodules
       - id: trailing-whitespace
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 23.12.1
     hooks:
       - id: black
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.8
     hooks:
-      - id: isort
-        additional_dependencies: ['toml']
-# - repo: https://github.com/astral-sh/ruff-pre-commit
-#   rev: v0.11.7
-#   hooks:
-#     # Run the linter
-#     - id: ruff
-# - repo: https://github.com/flakeheaven/flakeheaven
-#   rev: 3.3.0
-#   hooks:
-#     - id: flakeheaven
-#    hooks:
-#    -   id: flakehell
-#        name: flakehell (flake8 wrapper)
-#        description: flake8 wrapper for pyproject.toml compat
-#        entry: flakehell
-#        args: ['lint']
-#        language: python
-#        types: [python]
-#-   repo: https://github.com/pycqa/flake8
-#    rev: 4.0.1
-#    hooks:
-#    -    id: flake8
-#         exclude: ^samples/
+      # Run the linter
+      - id: ruff
+      # Run the formatter.
+      - id: ruff-format

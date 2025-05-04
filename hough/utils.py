@@ -4,22 +4,18 @@
 import csv
 import datetime
 import functools
-import logging
-import logging.config
-import logging.handlers
 import os
-import signal
 import sys
 import time
 import traceback
 from dataclasses import dataclass
-from functools import cached_property, reduce
-from multiprocessing import Manager, Process, cpu_count, get_context
+from functools import cached_property
+from multiprocessing import get_context, Process, Queue, Manager
 from multiprocessing.pool import Pool
 from pathlib import Path
-from typing import Annotated, List, Optional
+from tqdm import tqdm
 
-from cyclopts import App, Parameter, validators
+from cyclopts import Parameter
 from loguru import logger
 
 
@@ -71,9 +67,24 @@ def check_files(files: list[Path]):
     for f in files:
         if f.exists() and f.is_file():
             continue
-        raise
         return f"Cannot access {f}, aborting."
     return None
+
+
+def _pbar_listener(q, total, disable, unit, desc):
+    pbar = tqdm(total=total, disable=disable, unit=unit, desc=desc)
+    for item in iter(q.get, None):
+        pbar.update()
+
+
+def start_pbar(total: int, disable: bool, unit: str, desc: str) -> (Queue, Process):
+    q = Manager().Queue(-1)
+    proc = Process(
+        target=_pbar_listener,
+        args=(q, total, disable, unit, desc),
+    )
+    proc.start()
+    return q, proc
 
 
 def abort(pool=None, log_queue=None, listener=None):
@@ -94,7 +105,7 @@ def abort(pool=None, log_queue=None, listener=None):
                 listener.join()
             except Exception:
                 pass
-    except Exception:
+    except Exception:  # pragma: no cover
         print("Exception during abort:", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
 
@@ -107,7 +118,8 @@ def load_csv(f: Path):
             for row in reader:
                 if row[0] == "Input File":
                     continue
-                for idx in [1, 4, 5]:
+                # for idx in [4, 5, 6, 7]:
+                for idx in [4, 5]:
                     row[idx] = int(row[idx]) if row[idx] else ""
                 data.append([tuple(row)])
     return data

@@ -30,7 +30,7 @@
 name = "hough"
 version = "0.3.0.dev1"
 description = "Skew detection and correction in scanned images."
-authors = ["qu1j0t3 <support@telegraphics.com.au>", "Joan Touzet <wohali@apache.org>"]
+authors = ["Joan Touzet <wohali@apache.org>", "qu1j0t3 <support@telegraphics.com.au>"]
 maintainers = ["Joan Touzet <wohali@apache.org>"]
 repository = "https://github.com/wohali/hough"
 keywords = ["hough", "scan", "rotate", "deskew"]
@@ -70,9 +70,9 @@ dependencies = [
     "tqdm>=4.66.1",
     "importlib_metadata>=6.8.0",
     "virtualenv (>=20.30.0,<21.0.0)",
-    "opencv-python (>=4.11.0.86) ; extra != 'cuda'",
     "cyclopts (>=3.14.1,<4.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
+#    "opencv-python (>=4.11.0.86) ; extra != 'cuda'",
 ]
 
 [project.scripts]
@@ -80,12 +80,12 @@ hough = 'hough.main:main'
 
 [project.optional-dependencies]
 cuda = [
-#    "torch (>=2.7.0+cu128)",
-#    "torchvision (>=0.22.0+cu128)",
     "cupy-cuda12x (>=13.4.1)",
     "optuna>=4.3.0",
     "cucim-cu12>=25.4.0"
-#   "opencv-python",     # because you probably have to build the CUDA version yourself... sigh.
+#    "torch (>=2.7.0+c2128)",
+#    "torchvision (>=0.22.0+cu128)",
+#   "opencv-python",     # pre-built wheels a pain here.
 ]
 
 [tool.poetry.dependencies]
@@ -109,21 +109,29 @@ cuda = [
 #url      = "https://download.pytorch.org/whl/cpu"
 
 [tool.poetry.group.dev.dependencies]
-isort = "^5.13.2"
-pytest = "^7.4.4"
-pre-commit = "^4.2.0"
-pytest-cov = "^4.1.0"
-pytest-mock = "^3.11.1"
-tox = "^4.12.1"
-black = "^23.12.1"
-pylint = ">=3.0.3,<4.0.0"
-flakeheaven = "^3.3.0"
 austin-python = "^1.7.1"
+black = "^25.1.0"
+pre-commit = "^4.2.0"
+pytest = "^8.3.5"
+pytest-mock = "^3.14.0"
+pylint = ">=3.3.7,<4.0.0"
+ruff = "^0.11.8"
+coverage = "^7.8.0"
 
 [tool.coverage.run]
 branch = true
 concurrency = ["multiprocessing", "thread"]
+command_line = "--module pytest --verbose --exitfirst tests/"
 disable_warnings = ["module-not-imported", "no-data-collected", "module-not-measured"]
+parallel = true
+sigterm = true
+# see https://github.com/nedbat/coveragepy/issues/1653
+omit = [ "hough/cudautils.py", "config.py", "config-3.py" ]
+
+[tool.coverage.paths]
+source = [
+    "hough/",
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -133,33 +141,10 @@ exclude_lines = [
     "except KeyboardInterrupt",
     "if __name__ == .__main__.:",
 ]
+# currently unused
+omit = [ "hough/cudautils.py" ]
 
-[tool.tox]
-legacy_tox_ini = '''
-[tox]
-isolated_build = true
-envlist = py39,py310,py311
 
-[testenv]
-whitelist_externals = poetry
-commands =
-    poetry install -v
-    poetry run pytest tests/ -v -x --cov=./ --cov-config=setup.cfg --cov-report=term --cov-report=html --cov-report=xml
-'''
-
-[tool.flakeheaven]
-exclude = [".venv", "venv", ".git", "__pycache__", "doc/", "build/", "dist/", ".tox/"]
-max_line_length = 120
-show_source = true
-accept_encodings = "utf-8"
-format = "colored"
-statistics = true
-
-[tool.flakeheaven.plugins]
-# come back and check out https://github.com/meltano/meltano/blob/main/pyproject.toml
-pyflakes = [ "+*", "-E203", "-W503", ]
-pycodestyle = [ "+*", "-E203", "-W503", ]
-pylint = ["+F*", "+E*", "-E0611", "-E1101", "-E0401", "-E1102", "-E1123"]
 
 [tool.black]
 include = '\.pyi?$'
@@ -167,7 +152,6 @@ exclude = '''
 /(
     \.git
   | \.mypy_cache
-  | \.tox
   | \.venv
   | _build
   | buck-out
@@ -176,24 +160,33 @@ exclude = '''
 )/
 '''
 
-[build-system]
-requires = ["poetry>=2.0.0"]
-build-backend = "poetry.core.masonry.api"
-
 [tool.pytest.ini_options]
 testpaths = [
   "tests",
 ]
-addopts = "-x -v --capture=tee-sys --cov=hough --cov-report=html --cov-report=term --cov-report=xml --cov-config=.coveragerc"
+addopts = "-x -v --capture=tee-sys"
 
-# -- ISORT -- #
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py311"
+exclude = [".venv", "venv", ".git", "__pycache__", "doc/", "build/", "dist/"]
 
-[tool.isort]
-known_third_party = ["docopt", "filetype", "fitz", "imageio", "numpy", "pytest", "scipy", "skimage", "termplotlib", "tqdm"]
-skip = ["__init__.py"]
-multi_line_output = 3
-lines_after_imports = 2
-force_grid_wrap = 0
-combine_as_imports = true
-include_trailing_comma = true
-profile = "black"
+[tool.ruff.lint]
+select = [
+  # pycodestyle
+  "E",
+  # Pyflakes
+  "F",
+  # Following are not in ruff yet, see:
+  # pylint = ["+F*", "+E*", "-E0611", "-E1101", "-E0401", "-E1102", "-E1123"]
+  # pyflakes / pycodestyle = [.... "-W503"]
+]
+ignore = ["E203", "E501"]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+
+[build-system]
+requires = ["poetry>=2.0.0"]
+build-backend = "poetry.core.masonry.api"

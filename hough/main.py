@@ -21,6 +21,7 @@
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import sys
+import traceback
 from multiprocessing import set_start_method
 from pathlib import Path
 from typing import Annotated
@@ -52,10 +53,9 @@ def process(
 ) -> int:
     """Fully analyse and rotate one or more files."""
     resultspath = analyse_files(files, common)
-    if not resultspath:
-        exit(1)
     if histogram:
-        histo(resultspath)
+        if ret := histo(resultspath) != 0:
+            return ret
     return rotate_files(resultspath, common)
 
 
@@ -69,29 +69,24 @@ def analyse(
     ] = False,
 ) -> int:
     """Analyse one or more files for deskewing."""
+    if err := check_files(files):
+        logger.error(err)
+        return 1
     resultspath = analyse_files(files, common)
     if not resultspath:
         return 1
     if histogram:
-        histo(resultspath)
+        return histo(resultspath)
     return 0
 
 
 @app.command()
+# no @logit
 def histogram(
-    results: Annotated[Path, Parameter(validator=validators.Path(exists=True))]
+    results: Annotated[Path, Parameter(validator=validators.Path(exists=True))],
 ) -> int:
     """Show a histogram of rotation angles from a previous analysis."""
-    try:
-        histo(results)
-        return 0
-    except Exception:
-        import sys
-        import traceback
-
-        print(f"Exception in histogram process: \n{traceback.format_exc()}")
-        # logger.error(f"Exception in histogram process: \n{traceback.format_exc()}")
-        return 1
+    return histo(results)
 
 
 @app.command()
@@ -110,7 +105,7 @@ def rotate(
     if results.exists():
         results = results.absolute()
     elif str(results) == "results.csv":
-        results = Path(self.outpath, "results.csv").absolute()
+        results = Path(common.outpath, "results.csv").absolute()
     elif "TIMESTAMP" in results:
         # support replacing TIMESTAMP if specified
         results = Path(str(results).replace("TIMESTAMP", common.now)).absolute()
@@ -125,11 +120,16 @@ def rotate(
     return rotate_files(results, common)
 
 
-def main():
-    # needed for CUDA backend multiprocessing pool
-    set_start_method("spawn")
+def main(*args, **kwargs):
+    # needed for CUDA backend multiprocessing pool, forced for pytest
+    set_start_method("spawn", force=True)
     # TODO: maybe clean up empty out paths on exit?
-    sys.exit(app())
+    try:
+        sys.exit(app(*args, **kwargs))
+    except Exception:
+        print("Uncaught exception:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

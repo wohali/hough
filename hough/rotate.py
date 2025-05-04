@@ -1,14 +1,23 @@
 """
 Worker functions for a parallelizable deskewer.
 """
-import os
+
 import signal
-from multiprocessing import Manager, Process, Queue
+from multiprocessing import Queue
 from multiprocessing.pool import Pool
 from pathlib import Path
 
-import cupy as cp
-import cupyx.scipy.ndimage as ndi
+from loguru import logger
+
+from . import start_pbar
+
+try:
+    import cupy as cp
+    import cupyx.scipy.ndimage as ndi
+except ModuleNotFoundError:
+    import numpy as cp
+    import scipy.ndimage as ndi
+
 import filetype
 import fitz
 import imageio.v3 as iio
@@ -20,9 +29,12 @@ from .utils import CommonArgs, abort, load_csv
 
 # TODO: provide order override?
 def rotate_ndarray(cpuimg: np.ndarray, angle: float, order=0) -> np.ndarray:
-    img = cp.asarray(cpuimg, dtype=cp.uint8)
-    fixed = ndi.rotate(img, -angle, mode="nearest", reshape=False, order=order)
-    return fixed.get()
+    if "cuda" in dir(cp):
+        img = cp.asarray(cpuimg, dtype=cp.uint8)
+        fixed = ndi.rotate(img, -angle, mode="nearest", reshape=False, order=order)
+        return fixed.get()
+    else:
+        return ndi.rotate(cpuimg, -angle, mode="nearest", reshape=False, order=order)
 
 
 def rotate(imagelist: list[tuple]) -> int:
@@ -78,13 +90,11 @@ def rotate(imagelist: list[tuple]) -> int:
                             page.show_pdf_page(rect, img_pdf, 0)
                         except ValueError as e:
                             logger.error(
-                                f"Skipping rotating {filename} - "
-                                f"page {page} - xref {xref}: {e}"
+                                f"Skipping rotating {filename} - page {page} - xref {xref}: {e}"
                             )
                     else:
                         logger.error(
-                            f"Skipping process {filename} - page {page} - "
-                            f"image {xref} (smask=={smask})"
+                            f"Skipping process {filename} - page {page} - image {xref} (smask=={smask})"
                         )
             # TODO: deal with other multi-image formats
             else:
@@ -118,6 +128,9 @@ def rotate_files(resultsfile: Path, common: CommonArgs) -> int:
 
     # load a previously generated results.csv file
     results = load_csv(resultsfile)
+    if len(results) == 0:
+        logger.error("Nothing to do!")
+        return 1
 
     # create dict of lists, each key is a file and each value a list of tuple-images
     dictresults = {}
@@ -130,35 +143,28 @@ def rotate_files(resultsfile: Path, common: CommonArgs) -> int:
     ]
 
     try:
-        with Manager() as manager:
-            q = manager.Queue()
-            proc = Process(
-                target=pbar_listener,
-                args=(
-                    q,
-                    len(results),
-                    (common.loglevel != "WARNING"),
-                    "pg",
-                    "Rotation: ",
-                ),
-            )
-            proc.start()
-            with Pool(
-                processes=common.workers,
-                initializer=_init_rotator,
-                initargs=(common, q),
-            ) as p:
-                for i, result in enumerate(
-                    p.imap_unordered(rotate, sortedresults, min(common.workers, 8))
-                ):
-                    pass
-            q.put(None)
-            proc.join()
+        q, proc = start_pbar(
+            len(results),
+            (common.loglevel != "WARNING"),
+            "pg",
+            "Rotation: ",
+        )
+        with Pool(
+            processes=common.workers,
+            initializer=_init_rotator,
+            initargs=(common, q),
+        ) as p:
+            for i, result in enumerate(
+                p.imap_unordered(rotate, sortedresults, min(common.workers, 8))
+            ):
+                pass
+        q.put(None)
+        proc.join()
         return 0
 
     except KeyboardInterrupt:
         import sys
 
         print("Caught KeyboardInterrupt, terminating workers...", file=sys.stderr)
-        abort(p)
+        abort(p, q, proc)
         return 1
