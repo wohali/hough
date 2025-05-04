@@ -1,13 +1,15 @@
 import math
-import os
 
 import numpy as np
+from pathlib import Path
 import termplotlib as tpl
+
+from loguru import logger
 
 from .utils import load_csv
 
 
-def histogram(results: str):
+def _do_histogram(results: Path):
     # load the file
     data = load_csv(results)
     res = []
@@ -41,3 +43,14 @@ def histogram(results: str):
     print(f"50th percentile: {np.percentile(res, 50):1.2f}°")
     print(f"90th percentile: {np.percentile(res, 90):1.2f}°")
     print(f"99th percentile: {np.percentile(res, 99):1.2f}°")
+
+
+def histogram(results: Path):
+    try:
+        _do_histogram(results)
+        return 0
+    except Exception:
+        import traceback
+
+        logger.error(f"Exception in histogram process: \n{traceback.format_exc()}")
+        return 1

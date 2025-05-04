@@ -35,7 +35,7 @@ jobs:
         run: poetry install
       - name: Linting
         run: |
-          pip install pre-commit flakehell
+          pip install pre-commit ruff
           pre-commit run --all-files
 
   Linux:
@@ -69,9 +69,11 @@ jobs:
       - name: Install the project dependencies
         run: poetry install
       - name: Test
-        run: poetry run pytest -q tests
+        run: poetry run coverage run
+      - name: Combine coverage data
+        run: poetry run coverage combine --append
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -106,11 +108,13 @@ jobs:
       - name: Install the project dependencies
         run: poetry install
       - name: Test
-        run: poetry run pytest -q tests
+        run: poetry run coverage run
+      - name: Combine coverage data
+        run: poetry run coverage combine --append
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}}
 
   Windows:
     needs: Linting
@@ -146,8 +150,10 @@ jobs:
       - name: Test
         run: |
           fsutil file createnew pytest.ini 0
-          poetry run pytest -q tests
+          poetry run coverage run
+      - name: Combine coverage data
+        run: poetry run coverage combine --append
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

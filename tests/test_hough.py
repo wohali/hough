@@ -1,13 +1,24 @@
-import logging
 import os
-from multiprocessing import Pool
+from multiprocessing import Pool, set_start_method
+from pathlib import Path
 from shutil import rmtree
 
 import pytest
 
-from hough import __version__, analyse_file, run
-from hough.cli import _abort
-from hough.log_utils import start_logger_process
+from hough import (
+    __version__,
+    analyse_files,
+    main,
+    abort,
+    start_pbar,
+    CommonArgs,
+    load_csv,
+)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def always_spawn():
+    set_start_method("spawn", force=True)
 
 
 @pytest.fixture(autouse=True)
@@ -23,39 +34,45 @@ def test_version():
 
 @pytest.mark.usefixtures("sampledir")
 def test_histogram_exception(mocker):
-    mocker.patch("hough.histogram", new=RuntimeError("Boom"))
-    assert run(["--histogram", "av-000.tif"]) == -1
+    mocker.patch("hough.stats._do_histogram", side_effect=RuntimeError("Boom"))
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "--histogram", "av-000.tif"])
+    assert e.value.code == 1
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_null_histogram():
-    assert run(["--histogram", "white.jpg"]) == 0
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "--histogram", "white.jpg"])
+    assert e.value.code == 0
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_abort(tmpdir):
-    logq, listener = start_logger_process(logging.DEBUG, "null.csv")
+    q, proc = start_pbar(1, True, "tests", "Testing: ")
     with Pool(processes=2) as p:
-        _abort(p, logq, listener)
+        abort(p, q, proc)
     with Pool(processes=2) as p:
-        _abort(p, 123, "abc")
+        abort(p, 123, "abc")
     with Pool(processes=2) as p:
-        _abort(p, None, None)
-    _abort(123, 456, "abc")
-    os.remove("null.csv")
+        abort(p, None, None)
+    abort(123, 456, "abc")
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_no_valid_files():
-    run(["a", "b", "c"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "a", "b", "c"])
+    assert e.value.code == 1
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_vert():
-    results = analyse_file("av-000.tif")
-    res = results[0]
+    resultspath = analyse_files([Path("av-000.tif")], CommonArgs())
+    results = load_csv(resultspath)
+    res = results[0][0]
     assert res[0] == "av-000.tif"
-    assert res[1] == ""
+    assert res[1] == 0.0
     assert res[2] > -2 and res[2] <= 0.0
     assert res[3] < 1.0
     # assert(res[4] == 464)
@@ -64,123 +81,173 @@ def test_vert():
 
 @pytest.mark.usefixtures("sampledir")
 def test_hv_fail():
-    run(["av-001.jpg"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "av-001.jpg"])
+    assert e.value.code == 0
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_multifile_debug():
     rmtree("debug", ignore_errors=True)
-    run(["--debug", "av-000.tif", "av-001.jpg"])
-    assert os.path.exists("debug")
-    assert os.path.exists("hough.log")
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "--out=t", "--debug", "av-000.tif", "av-001.jpg"])
+    assert e.value.code == 0
+    assert Path("t/debug").exists()
+    assert Path("t/hough.log").exists()
     # TODO: assert expected output appears under debug/DATE/whatever
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_unstraightenable():
-    run(["--debug", "binder.png"])
-    assert os.path.exists("hough.log")
-    os.remove("hough.log")
-    rmtree("debug", ignore_errors=True)
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "--out=t", "--debug", "binder.png"])
+    assert e.value.code == 0
+    assert Path("t/hough.log").exists()
+    os.remove("t/hough.log")
+    rmtree("t", ignore_errors=True)
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_unstraightenable_nodebug():
-    run(["binder.png"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "binder.png"])
+    assert e.value.code == 0
+
+
+@pytest.mark.usefixtures("sampledir")
+def test_just_histogram():
+    with pytest.raises(SystemExit) as e:
+        main(["histogram", "--results", "newman-results.csv"])
+    assert e.value.code == 0
+
+
+@pytest.mark.usefixtures("sampledir")
+def test_blank_histogram():
+    with pytest.raises(SystemExit) as e:
+        main(["histogram", "--results", "no-angles.csv"])
+    assert e.value.code == 0
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_histogram_verbose():
-    run(["--histogram", "--verbose", "av-000.tif"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "--histogram", "--verbose", "av-000.tif"])
+    assert e.value.code == 0
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_rgb_pdf_4_workers():
-    if os.path.exists("./__pytest.csv"):
-        os.remove("./__pytest.csv")
-    run(
-        [
-            "--debug",
-            "--results=./__pytest.csv",
-            "--workers=4",
-            "Newman_Computer_Exchange_VAX_PC_PDP11_Values.pdf",
-        ]
-    )
-    assert os.path.exists("./__pytest.csv")
-    assert os.path.exists("hough.log")
-    os.remove("./__pytest.csv")
-    os.remove("hough.log")
-    rmtree("debug", ignore_errors=True)
+    if Path("t").exists():
+        rmtree("t", ignore_errors=True)
+    with pytest.raises(SystemExit) as e:
+        main(
+            [
+                "analyse",
+                "--debug",
+                "--out=t",
+                "--workers=4",
+                "Newman_Computer_Exchange_VAX_PC_PDP11_Values.pdf",
+            ]
+        )
+    assert e.value.code == 0
+    assert Path("t/results.csv").exists()
+    assert Path("t/hough.log").exists()
+    assert Path("t/debug").exists()
+    assert Path("t/debug").is_dir()
+    rmtree("t", ignore_errors=True)
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_form_pdf():
-    run(["i-9.pdf"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "i-9.pdf"])
+    assert e.value.code == 0
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_mixed_pdf():
-    run(["i-9-paper-version.pdf"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "i-9-paper-version.pdf"])
+    assert e.value.code == 0
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_white():
-    run(["white.jpg"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "white.jpg"])
+    assert e.value.code == 0
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_unknown():
-    run(["../README.md"])
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "../README.md"])
+    assert e.value.code == 1
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_broken_out():
     open(".__pytest", "a").close()
-    assert run(["--out=.__pytest", "white.jpg"]) == -1
+    with pytest.raises(SystemExit) as e:
+        main(["analyse", "--out=.__pytest", "white.jpg"])
+    assert e.value.code == 1
     os.remove(".__pytest")
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_no_args():
-    assert run([]) == 0
+    with pytest.raises(SystemExit) as e:
+        main([])
+    assert e.value.code is None
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_rotate_nothing():
-    if os.path.exists(".__pytest"):
+    if Path(".__pytest").exists():
         os.remove(".__pytest")
     open(".__pytest", "a").close()
-    assert run(["--rotate", "--results=.__pytest"]) == -1
+    with pytest.raises(SystemExit) as e:
+        main(["rotate", "--results=.__pytest"])
+    assert e.value.code == 1
     os.remove(".__pytest")
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_rotate():
-    if os.path.exists(".__pytest.dir"):
+    if Path(".__pytest.dir").exists():
         rmtree(".__pytest.dir")
-    run(
-        [
-            "--rotate",
-            "--out=.__pytest.dir",
-            "Newman_Computer_Exchange_VAX_PC_PDP11_Values.pdf",
-            "av-000.tif",
-        ]
-    )
-    assert os.path.exists(".__pytest.dir")
-    assert os.path.exists(".__pytest.dir/results.csv")
-    assert os.path.exists(
+    with pytest.raises(SystemExit) as e:
+        main(
+            [
+                "process",
+                "--histogram",
+                "--out=.__pytest.dir",
+                "Newman_Computer_Exchange_VAX_PC_PDP11_Values.pdf",
+                "av-000.tif",
+            ]
+        )
+    assert e.value.code == 0
+    assert Path(".__pytest.dir").exists()
+    assert Path(".__pytest.dir/results.csv").exists()
+    assert Path(
         ".__pytest.dir/Newman_Computer_Exchange_VAX_PC_PDP11_Values.pdf"
-    )
-    assert os.path.exists(".__pytest.dir/av-000.tif")
+    ).exists()
+    assert Path(".__pytest.dir/av-000.tif").exists()
     rmtree(".__pytest.dir")
 
 
 @pytest.mark.usefixtures("sampledir")
 def test_rotate_from_results():
-    if os.path.exists(".__pytest.dir"):
+    if Path(".__pytest.dir").exists():
         rmtree(".__pytest.dir")
-    assert run(["--rotate", "--out=.__pytest.dir", "--results=newman-results.csv"]) == 0
-    assert os.path.exists(
+    with pytest.raises(SystemExit) as e:
+        main(["rotate", "--out=.__pytest.dir", "--results=newman-results.csv"]) == 0
+    assert e.value.code == 0
+    assert Path(
         ".__pytest.dir/Newman_Computer_Exchange_VAX_PC_PDP11_Values.pdf"
-    )
+    ).exists()
     rmtree(".__pytest.dir")
+
+
+# note: going to get DeprecationWarnings, cannot resolve yet
+#   see https://github.com/swig/swig/issues/2881#issuecomment-2332652634

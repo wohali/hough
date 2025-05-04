@@ -1,29 +1,36 @@
 """
 Worker functions for a parallelizable skew analyser.
 """
+
 import bisect
 import csv
 import math
-import os
 import signal
-import traceback
 from multiprocessing.pool import Pool
 from pathlib import Path
 
-import cupy as cp
-import cupyx.scipy.ndimage as ndi
-import cv2
-import filetype
+
+try:  # pragma: no cover
+    import cupy as cp
+    import cupyx.scipy.ndimage as ndi
+    from cucim.skimage.color import rgb2gray
+    from cucim.skimage.exposure import is_low_contrast
+    from cucim.skimage.feature import canny
+    from cucim.skimage.filters import threshold_otsu
+    from cucim.skimage.transform import downscale_local_mean
+    from cucim.skimage.util import crop, img_as_bool, img_as_ubyte
+except ModuleNotFoundError:  # pragma: no cover
+    import numpy as cp
+    import scipy.ndimage as ndi
+    from skimage.color import rgb2gray
+    from skimage.exposure import is_low_contrast
+    from skimage.feature import canny
+    from skimage.filters import threshold_otsu
+    from skimage.transform import downscale_local_mean
+    from skimage.util import crop, img_as_bool, img_as_ubyte
+
 import imageio.v3 as iio
 import numpy as np
-import pymupdf
-from cucim.skimage.color import rgb2gray
-from cucim.skimage.exposure import is_low_contrast
-from cucim.skimage.feature import canny
-from cucim.skimage.filters import threshold_otsu
-from cucim.skimage.morphology import footprint_rectangle
-from cucim.skimage.transform import downscale_local_mean
-from cucim.skimage.util import crop, img_as_bool, img_as_ubyte
 from loguru import logger
 from skimage.draw import line_aa
 from skimage.transform import probabilistic_hough_line
@@ -43,13 +50,14 @@ def _grey(x):
 
 # vectorize applies JIT compiler to the given function
 _greyf = cp.vectorize(_grey)
+
 # CuPy scalars are actually GPU-resident zero-dimensional arrays, so we use numpy here instead
 hough_prec = np.deg2rad(0.02)
 hough_theta_h = np.arange(
-    np.deg2rad(-93.0), np.deg2rad(-87.0), hough_prec, dtype=cp.float64
+    np.deg2rad(-93.0), np.deg2rad(-87.0), hough_prec, dtype=np.float64
 )
 hough_theta_v = np.arange(
-    np.deg2rad(-3.0), np.deg2rad(3.0), hough_prec, dtype=cp.float64
+    np.deg2rad(-3.0), np.deg2rad(3.0), hough_prec, dtype=np.float64
 )
 hough_theta_hv = np.concatenate((hough_theta_v, hough_theta_h))
 
@@ -59,12 +67,12 @@ def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
     if orientation == "H":
         axis = 1
         theta = hough_theta_h
-        fp = cp.ones((51, 1), dtype=cp.float32)
+        fp = cp.ones((51, 1), dtype=np.float32)
         margin = int(width * 0.975)
     elif orientation == "V":
         axis = 0
         theta = hough_theta_v
-        fp = cp.ones((1, 51), dtype=cp.float32)
+        fp = cp.ones((1, 51), dtype=np.float32)
         margin = int(height * 0.025)
     else:
         raise RuntimeError(f"Unknown orientation {orientation}!")
@@ -100,15 +108,21 @@ def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
     )
 
     line_length = int(height * 0.25)
-    lines = probabilistic_hough_line(
-        cp.asnumpy(edges), line_length=line_length, line_gap=2, theta=theta
-    )
+    if "cuda" in dir(cp):
+        lines = probabilistic_hough_line(
+            cp.asnumpy(edges), line_length=line_length, line_gap=2, theta=theta
+        )
+    else:
+        lines = probabilistic_hough_line(
+            edges, line_length=line_length, line_gap=2, theta=theta
+        )
+
+    # TODO: try OpenCV HoughLinesP
     # img_cv2 = cv_cuda_gpumat_from_cp_array(edges_u8)
     # print(edges_u8)
     # print(edges_u8.__cuda_array_interface__['data'][0])
     # print(img_cv2.download())
     # print(img_cv2.cudaPtr())
-    # sadly, HoughLinesP is not in the cuda backend...
     # lines = cv2.HoughLinesP(img_cv2.download(),
     #                       1, #rho
     #                       theta,
@@ -146,16 +160,19 @@ def analyse_image(
         tuple[int, int] | None,  # (pagenum, xref) if multi-image file
         tuple[int, int] | None,  # (xres, yres) dpi
         np.ndarray,  # image
-    ]
+    ],
 ):
     """Analyses an image for deskewing, potentially using a CUDA backend."""
-    cp.cuda.set_pinned_memory_allocator(None)
+    if "cuda" in dir(cp):
+        cp.cuda.set_pinned_memory_allocator(None)
+        # This copies the image to the GPU
+        page = cp.asarray(image[3], dtype=np.float32)
+    else:
+        page = image[3]
 
     f = image[0]
     filename = f.name
-    pagenum = float(f"{image[1][0]}.{image[1][1]}") if image[1] else ""
-    # This copies the image to the GPU
-    page = cp.asarray(image[3], dtype=cp.float32)
+    pagenum = float(f"{image[1][0]}.{image[1][1]}") if image[1] else 0.0
 
     global windowsize
     if "windowsize" not in globals():
@@ -277,12 +294,20 @@ def analyse_image(
         if common.debug:
             edges_grey = _greyf(edges)
 
-        lines = probabilistic_hough_line(
-            cp.asnumpy(edges),
-            line_length=int(pageh * 0.04),
-            line_gap=6,
-            theta=hough_theta_hv,
-        )
+        if "cuda" in dir(cp):
+            lines = probabilistic_hough_line(
+                cp.asnumpy(edges),
+                line_length=int(pageh * 0.04),
+                line_gap=6,
+                theta=hough_theta_hv,
+            )
+        else:
+            lines = probabilistic_hough_line(
+                edges,
+                line_length=int(pageh * 0.04),
+                line_gap=6,
+                theta=hough_theta_hv,
+            )
 
         for (x_0, y_0), (x_1, y_1) in lines:
             if abs(x_1 - x_0) > abs(y_1 - y_0):
@@ -372,6 +397,10 @@ def analyse_files(files: list[Path], common: CommonArgs) -> Path:
                 ):
                     pbar.update()
                     bisect.insort(results, result, key=lambda x: x[1])
+        except NotImplementedError as e:
+            logger.error(e)
+            abort(p)
+            return None
         except KeyboardInterrupt:
             import sys
 
@@ -391,7 +420,8 @@ def analyse_files(files: list[Path], common: CommonArgs) -> Path:
                 "Variance of computed angles",
                 "Image width (px)",
                 "Image height (px)",
-                # Add xres, yres here
+                # "X pixels per inch",
+                # "Y pixels per inch",
             ]
         )
         writer.writerows(results)

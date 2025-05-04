@@ -11,7 +11,9 @@ from loguru import logger
 from numpy import ndarray
 
 
-def get_pages(f: Path) -> list[tuple[Path, str, int]]:
+def get_pages(
+    f: Path,
+) -> list[tuple[Path, str, int]]:  # pragma: no cover because dead code
     """Returns the pages in the file, as a list of tuples of the form:
     [(filename, "mime/type", pagenum), ... ]
     """
@@ -35,6 +37,8 @@ def get_num_images(files: list[Path]) -> int:
 
     for f in files:
         kind = filetype.guess(f)
+        if not kind:
+            return 0
         if kind.mime == "application/pdf":
             pdf = pymupdf.open(f)
             for page in pdf.pages():
@@ -59,7 +63,7 @@ def get_images(
     for f in files:
         # do not catch exceptions here, let them bubble up
         kind = filetype.guess(f)
-        if kind.mime == "application/pdf":
+        if kind and kind.mime == "application/pdf":
             logger.info(f"Reading PDF {f}...")
             pdf = pymupdf.open(f)
             for page in pdf.pages():
