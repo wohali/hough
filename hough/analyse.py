@@ -1,11 +1,14 @@
 """
 Worker functions for a parallelizable skew analyser.
 """
-import logging
+import bisect
+import csv
 import math
 import os
 import signal
 import traceback
+from multiprocessing.pool import Pool
+from pathlib import Path
 
 import cupy as cp
 import cupyx.scipy.ndimage as ndi
@@ -21,14 +24,16 @@ from cucim.skimage.filters import threshold_otsu
 from cucim.skimage.morphology import footprint_rectangle
 from cucim.skimage.transform import downscale_local_mean
 from cucim.skimage.util import crop, img_as_bool, img_as_ubyte
+from loguru import logger
 from skimage.draw import line_aa
 from skimage.transform import probabilistic_hough_line
+from tqdm import tqdm  # TODO: consider rich?
 
-from . import log_utils
+from . import CommonArgs, abort, get_images, get_num_images
 
 
-# TODO: parametrise out all magic numbers
-# TODO: deal with the logger issue, maybe via loguru
+# TODO: configfile out all magic numbers, including windowsize
+# TODO: class?
 
 
 # hough's little helpers
@@ -47,67 +52,6 @@ hough_theta_v = np.arange(
     np.deg2rad(-3.0), np.deg2rad(3.0), hough_prec, dtype=cp.float64
 )
 hough_theta_hv = np.concatenate((hough_theta_v, hough_theta_h))
-
-
-# thank you, https://github.com/rapidsai/cucim/issues/329 !
-def cv_cuda_gpumat_from_cp_array(arr: cp.ndarray) -> cv2.cuda.GpuMat:
-    assert len(arr.shape) in (
-        2,
-        3,
-    ), "CuPy array must have 2 or 3 dimensions to be a valid GpuMat"
-    type_map = {
-        cp.dtype("uint8"): cv2.CV_8U,
-        cp.dtype("int8"): cv2.CV_8S,
-        cp.dtype("uint16"): cv2.CV_16U,
-        cp.dtype("int16"): cv2.CV_16S,
-        cp.dtype("int32"): cv2.CV_32S,
-        cp.dtype("float32"): cv2.CV_32F,
-        cp.dtype("float64"): cv2.CV_64F,
-    }
-    depth = type_map.get(arr.dtype)
-    assert depth is not None, f"Unsupported CuPy array dtype {arr.dtype}"
-    channels = 1 if len(arr.shape) == 2 else arr.shape[2]
-    # equivalent to unexposed opencv C++ macro CV_MAKETYPE(depth,channels):
-    # (depth&7) + ((channels - 1) << 3)
-    mat_type = depth + ((channels - 1) << 3)
-    # TODO: do we need [1::-1] here to invert the matrix?
-    mat = cv2.cuda.createGpuMatFromCudaMemory(
-        arr.__cuda_array_interface__["shape"][1::-1],
-        mat_type,
-        arr.__cuda_array_interface__["data"][0],
-    )
-    return mat
-
-
-def cp_array_from_cv_cuda_gpumat(mat: cv2.cuda.GpuMat) -> cp.ndarray:
-    class CudaArrayInterface:
-        def __init__(self, gpu_mat: cv2.cuda.GpuMat):
-            w, h = gpu_mat.size()
-            type_map = {
-                cv2.CV_8U: "|u1",
-                cv2.CV_8S: "|i1",
-                cv2.CV_16U: "<u2",
-                cv2.CV_16S: "<i2",
-                cv2.CV_32S: "<i4",
-                cv2.CV_32F: "<f4",
-                cv2.CV_64F: "<f8",
-            }
-            self.__cuda_array_interface__ = {
-                "version": 3,
-                "shape": (h, w, gpu_mat.channels())
-                if gpu_mat.channels() > 1
-                else (h, w),
-                "typestr": type_map[gpu_mat.depth()],
-                "descr": [("", type_map[gpu_mat.depth()])],
-                "stream": 1,
-                "strides": (gpu_mat.step, gpu_mat.elemSize(), gpu_mat.elemSize1())
-                if gpu_mat.channels() > 1
-                else (gpu_mat.step, gpu_mat.elemSize()),
-                "data": (gpu_mat.cudaPtr(), False),
-            }
-
-    arr = cp.asarray(CudaArrayInterface(mat))
-    return arr
 
 
 def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
@@ -174,7 +118,6 @@ def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
     #                       )
 
     angles = []
-
     for (x0, y0), (x1, y1) in lines:
         # Ensure line is moving rightwards/upwards
         if orientation == "H":
@@ -182,6 +125,7 @@ def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
             offset = 0
         else:
             k = 1 if y1 > y0 else -1
+
             offset = 90
         angles.append(
             (
@@ -193,27 +137,29 @@ def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
                 y1,
             )
         )
-
     return (angles, edges)
 
 
-def analyse_image(f, page, logger, pagenum=None):
-    global debug, now
-    if "debug" not in globals():
-        debug = False
-    if "now" not in globals():
-        import datetime
+def analyse_image(
+    image: tuple[
+        Path,  # file
+        tuple[int, int] | None,  # (pagenum, xref) if multi-image file
+        tuple[int, int] | None,  # (xres, yres) dpi
+        np.ndarray,  # image
+    ]
+):
+    """Analyses an image for deskewing, potentially using a CUDA backend."""
+    cp.cuda.set_pinned_memory_allocator(None)
 
-        now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H%M%SZ")
+    f = image[0]
+    filename = f.name
+    pagenum = float(f"{image[1][0]}.{image[1][1]}") if image[1] else ""
+    # This copies the image to the GPU
+    page = cp.asarray(image[3], dtype=cp.float32)
+
+    global windowsize
     if "windowsize" not in globals():
         windowsize = 150
-
-    pagenum = float(pagenum) if pagenum is not None else ""
-
-    filename = os.path.basename(f)
-
-    # This copies the image to the GPU
-    page = cp.asarray(page, dtype=cp.float32)
 
     if page.ndim > 2:
         logger.debug(f"{filename} p{pagenum} - multichannel, converting to greyscale")
@@ -231,9 +177,9 @@ def analyse_image(f, page, logger, pagenum=None):
     thr = 255 * 0.8
     p = np.clip(pos, 0, thr)
     neg = thr - p
-    if debug:
+    if common.debug:
         iio.imwrite(
-            f"debug/{now}/{filename}_{pagenum}_neg.tiff",
+            f"{common.debugpath}/{filename}_{pagenum}_neg.tiff",
             neg.get(),
         )
 
@@ -243,34 +189,34 @@ def analyse_image(f, page, logger, pagenum=None):
     angles = h_angles + v_angles
 
     if len(angles) == 0:
-        if debug:
-            logger.debug(f"{filename} p{pagenum} - no lines found, changing threshold")
+        logger.debug(f"{filename} p{pagenum} - no lines found, changing threshold")
+        if common.debug:
             iio.imwrite(
-                f"debug/{now}/{filename}_{pagenum}_no_hlines.png",
+                f"{common.debugpath}/{filename}_{pagenum}_no_hlines.png",
                 img_as_ubyte(_greyf(h_edges)).get(),
             )
             iio.imwrite(
-                f"debug/{now}/{filename}_{pagenum}_no_vlines.png",
+                f"{common.debugpath}/{filename}_{pagenum}_no_vlines.png",
                 img_as_ubyte(_greyf(v_edges)).get(),
             )
         h_angles, h_edges = _hough_angles(pos, neg, "H", thresh=(100, 255))
         v_angles, v_edges = _hough_angles(pos, neg, "V", thresh=(100, 255))
         angles = h_angles + v_angles
     else:
-        if debug:
+        if common.debug:
             iio.imwrite(
-                f"debug/{now}/{filename}_{pagenum}_simple_dilation_h_edges.png",
+                f"{common.debugpath}/{filename}_{pagenum}_simple_dilation_h_edges.png",
                 h_edges.get(),
             )
             iio.imwrite(
-                f"debug/{now}/{filename}_{pagenum}_simple_dilation_v_edges.png",
+                f"{common.debugpath}/{filename}_{pagenum}_simple_dilation_v_edges.png",
                 v_edges.get(),
             )
 
     if len(angles) > 0:
         angle = np.median([x[1] for x in angles])
         logger.debug(f"{filename} p{pagenum} - Hough angle median: {angle}°")
-        if debug:
+        if common.debug:
             hs = 0
             vs = 0
             h_edges_grey = _greyf(h_edges)
@@ -292,20 +238,19 @@ def analyse_image(f, page, logger, pagenum=None):
                         ] + v
             if hs > 0:
                 iio.imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_hlines.png",
+                    f"{common.debugpath}/{filename}_{pagenum}_hlines.png",
                     img_as_ubyte(h_edges_grey).get(),
                 )
             if vs > 0:
                 iio.imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_vlines.png",
+                    f"{common.debugpath}/{filename}_{pagenum}_vlines.png",
                     img_as_ubyte(v_edges_grey).get(),
                 )
-        # end if debug
+        # end if common.debug
         angles = [x[1] for x in angles]
 
     else:
-        if debug:
-            logger.debug(f"{filename} p{pagenum} - Failed simple Hough, dilating...")
+        logger.debug(f"{filename} p{pagenum} - Failed simple Hough, dilating...")
 
         # We didn't find a good feature at the H or V sum peaks.
         # Let's brutally dilate everything and look for a vertical margin!
@@ -329,7 +274,7 @@ def analyse_image(f, page, logger, pagenum=None):
         thresh = threshold_otsu(small)
         dilated = ndi.grey_dilation(small > thresh, footprint=cp.ones((60, 60)))
         edges = canny(dilated, sigma=3.0)
-        if debug:
+        if common.debug:
             edges_grey = _greyf(edges)
 
         lines = probabilistic_hough_line(
@@ -353,7 +298,7 @@ def analyse_image(f, page, logger, pagenum=None):
             # If not, they don't add information anyway.
             if a != 0:
                 angles.append(-a)
-            if debug:
+            if common.debug:
                 rr, cc, val = line_aa(c0=x_0, r0=y_0, c1=x_1, r1=y_1)
                 for k, v in enumerate(val):
                     edges_grey[rr[k], cc[k]] = (1 - v) * edges_grey[rr[k], cc[k]] + v
@@ -363,29 +308,29 @@ def analyse_image(f, page, logger, pagenum=None):
             logger.debug(
                 f"{filename} p{pagenum} - dilated Hough angle median: {angle}°"
             )
-            if debug:
+            if common.debug:
                 iio.imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_dilated.png",
+                    f"{common.debugpath}/{filename}_{pagenum}_dilated.png",
                     img_as_bool(dilated).get(),
                 )
                 iio.imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_{angle}_lines.png",
+                    f"{common.debugpath}/{filename}_{pagenum}_{angle}_lines.png",
                     img_as_ubyte(edges_grey).get(),
                 )
         else:
             angle = None
             logger.debug(f"{filename} p{pagenum} - Failed dilated Hough, giving up")
-            if debug:
+            if common.debug:
                 iio.imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_dilated.png",
+                    f"{common.debugpath}/{filename}_{pagenum}_dilated.png",
                     img_as_bool(dilated).get(),
                 )
                 iio.imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_dilate_edges_grey.png",
+                    f"{common.debugpath}/{filename}_{pagenum}_dilate_edges_grey.png",
                     img_as_ubyte(edges_grey).get(),
                 )
                 iio.imwrite(
-                    f"debug/{now}/{filename}_{pagenum}_dilate_edges.png",
+                    f"{common.debugpath}/{filename}_{pagenum}_dilate_edges.png",
                     img_as_bool(edges).get(),
                 )
 
@@ -399,85 +344,55 @@ def analyse_image(f, page, logger, pagenum=None):
     )
 
 
-# TODO: refactor everything below here into a new file
-def _init_worker(queue, debug_arg, now_arg, wsz_arg):  # pragma: no cover
+# NOTE: _init_worker must be in the same module as analyse_files (i.e. the call to the initializer), not sure why
+def _init_worker(common_arg: CommonArgs):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    log_utils.setup_queue_logging(queue)
-    # global is only in the multiprocessing Pool workers, not in main process.
-    global debug, now, windowsize
-    debug = debug_arg
-    now = now_arg
-    windowsize = wsz_arg
+    global common, logger
+    common = common_arg
+    logger = common_arg.logger
 
 
-def get_pages(f):
-    """Returns the pages in the file, as a list of tuples of the form:
-    [(filename, "mime/type", pagenum), ... ]
-    """
-    try:
-        kind = filetype.guess(f)
-    except (FileNotFoundError, IsADirectoryError):
-        return []
-    if not kind:
-        return [(f, None, None)]
-    if kind.mime == "application/pdf":
-        pdf = pymupdf.open(f)
-        return [(f, kind.mime, x) for x in range(len(pdf))]
-    # TODO: Add support for multi-page TIFFs here via
-    #   https://imageio.readthedocs.io/en/stable/reference/userapi.html#reading-images
-    #   https://imageio.readthedocs.io/en/stable/userapi.html#imageio.mimread
-    else:
-        return [(f, kind.mime, None)]
+def analyse_files(files: list[Path], common: CommonArgs) -> Path:
+    results = []
 
-
-def analyse_page(tuple):
-    cp.cuda.set_pinned_memory_allocator(None)
-    f, mimetype, page = tuple
-    logger = logging.getLogger("hough")
-    if page is None:
-        # not a known multi-image file
+    with Pool(
+        processes=common.workers, initializer=_init_worker, initargs=(common,)
+    ) as p:
         try:
-            image = iio.imread(f)
-            logger.info(f"Processing {f}...")
-            return [analyse_image(f, image, logger)]
-        except ValueError as e:
-            # Fall through; might be multi-page anyway...
-            logger.debug(f"Single-page read of {f} failed: {e}")
-            if debug:
-                print(traceback.format_exc())
-        except OSError as e:
-            # imageio v3 returns OSError if the type is unknown
-            if "Could not find a backend" in str(e):
-                logger.debug(f"Read of {f} failed: {e}")
-                if debug:
-                    print(traceback.format_exc())
-    if mimetype == "application/pdf":
-        results = []
-        doc = pymupdf.open(f)
-        imagelist = doc.get_page_images(page)
-        for item in imagelist:
-            # TODO: Add per-image timer
-            xref = item[0]
-            smask = item[1]
-            if smask == 0:
-                # TODO: handle imgdict == None
-                imgdict = doc.extract_image(xref)
-                # TODO: store and use imgdict.{xres|yres}
-                # TODO: use imgdict.ext to inform iio.imread
-                pagenum = float(f"{page + 1}.{xref}")
-                logger.info(f"Processing {f} - page {pagenum}...")
-                try:
-                    image = iio.imread(imgdict["image"])
-                    results.append(analyse_image(f, image, logger, pagenum=pagenum))
-                except ValueError as e:
-                    logger.error(f"Skipping {f} - page {pagenum}: {e}")
-                    print(traceback.format_exc())
-            else:
-                logger.error(f"Skipping process {f} - page {pagenum} (smask=={smask})")
-        return results
-    else:
-        # TODO: support multi-image TIFF with
-        #   https://imageio.readthedocs.io/en/stable/reference/userapi.html#reading-images
-        #   https://imageio.readthedocs.io/en/stable/userapi.html#imageio.mimread
-        logger.error(f"Cannot process {f}: unknown file format")
-        return []
+            with tqdm(
+                total=get_num_images(files),
+                disable=(common.loglevel != "WARNING"),
+                unit="pg",
+                desc="Analysis: ",
+            ) as pbar:
+                for i, result in enumerate(
+                    p.imap_unordered(
+                        analyse_image, get_images(files), min(common.workers, 8)
+                    )
+                ):
+                    pbar.update()
+                    bisect.insort(results, result, key=lambda x: x[1])
+        except KeyboardInterrupt:
+            import sys
+
+            print("Caught KeyboardInterrupt, terminating workers...", file=sys.stderr)
+            abort(p)
+            return None
+
+    # TODO: don't clobber existing results file?
+    resultspath = Path(common.outpath, "results.csv")
+    with open(resultspath, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile, quoting=csv.QUOTE_NONNUMERIC)
+        writer.writerow(
+            [
+                "Input File",
+                "Page Number",
+                "Computed angle",
+                "Variance of computed angles",
+                "Image width (px)",
+                "Image height (px)",
+                # Add xres, yres here
+            ]
+        )
+        writer.writerows(results)
+    return resultspath

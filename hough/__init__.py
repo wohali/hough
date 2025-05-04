@@ -1,18 +1,15 @@
-from .analyse import analyse_page, get_pages
-from .cli import run
-from .rotate import rotate
+from importlib import metadata
+
+import toml
+
+from .utils import CommonArgs, abort, check_files, load_csv, logit
+from .multifiles import get_images, get_num_images
 from .stats import histogram
+from .analyse import analyse_files, analyse_image
+from .rotate import rotate_files
 
 
 try:
-    from importlib.metadata import PackageNotFoundError, version  # type: ignore
-except ImportError:  # pragma: no cover
-    from importlib_metadata import PackageNotFoundError, version  # type: ignore
-
-
-try:
-    __version__ = version(__name__)
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "unknown"
-
-__all__ = ["analyse_page", "get_pages", "run", "rotate", "histogram"]
+    __version__ = metadata.version(__package__)
+except metadata.PackageNotFoundError:
+    __version__ = toml.load("pyproject.toml")["tool"]["poetry"]["version"] + "dev"
