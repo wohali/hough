@@ -7,7 +7,6 @@ temp/
 tempsamples/
 
 # vi junk
-*.csv
 *.swp
 *~
 

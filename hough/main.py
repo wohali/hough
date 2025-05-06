@@ -26,13 +26,12 @@ from multiprocessing import set_start_method
 from pathlib import Path
 from typing import Annotated
 
-from cyclopts import App, Parameter, validators
-from loguru import logger
+from cyclopts import App, Parameter
+from cyclopts.types import ExistingFile
 
 from hough import (
     CommonArgs,
     analyse_files,
-    check_files,
     histogram as histo,
     logit,
     rotate_files,
@@ -62,16 +61,19 @@ def process(
 @app.command()
 @logit
 def analyse(
-    files: list[Path],
+    files: list[ExistingFile],
     common: CommonArgs | None = None,
-    histogram: Annotated[
-        bool, Parameter(help="Display result summary as histogram")
-    ] = False,
+    histogram: bool = False,
 ) -> int:
-    """Analyse one or more files for deskewing."""
-    if err := check_files(files):
-        logger.error(err)
-        return 1
+    """Analyse one or more files for deskewing.
+
+    Parameters
+    ----------
+    files: list[ExistingFile]
+        One or more files to analyse for deskewing.
+    histogram: bool
+        Display result summary as histogram after processing.
+    """
     resultspath = analyse_files(files, common)
     if not resultspath:
         return 1
@@ -83,7 +85,7 @@ def analyse(
 @app.command()
 # no @logit
 def histogram(
-    results: Annotated[Path, Parameter(validator=validators.Path(exists=True))],
+    results: ExistingFile,
 ) -> int:
     """Show a histogram of rotation angles from a previous analysis."""
     return histo(results)
@@ -92,31 +94,18 @@ def histogram(
 @app.command()
 @logit
 def rotate(
-    results: Annotated[
-        Path,
-        Parameter(
-            validator=validators.Path(exists=True),
-            help="Use the specified file for analysis results.",
-        ),
-    ],
+    results: ExistingFile,
     common: CommonArgs | None = None,
 ):
-    """Rotate one or more files that have previously been analysed."""
-    if results.exists():
-        results = results.absolute()
-    elif str(results) == "results.csv":
-        results = Path(common.outpath, "results.csv").absolute()
-    elif "TIMESTAMP" in results:
-        # support replacing TIMESTAMP if specified
-        results = Path(str(results).replace("TIMESTAMP", common.now)).absolute()
-    if err := check_files([results]):
-        logger.error(err)
-        return 1
+    """Rotate one or more files that have previously been analysed.
 
-    # TODO: check all files mentioned in results?
-    # if err := check_files(files):
-    #    logger.error(err)
-    #    return 1
+    Parameters
+    ----------
+    results: Path
+        Use the specified file for analysis results.
+    """
+    results = results.absolute()
+    # TODO: check all files mentioned in results exist too?
     return rotate_files(results, common)
 
 

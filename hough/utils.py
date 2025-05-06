@@ -4,7 +4,6 @@
 import csv
 import datetime
 import functools
-import os
 import sys
 import time
 import traceback
@@ -17,6 +16,12 @@ from tqdm import tqdm
 
 from cyclopts import Parameter
 from loguru import logger
+
+try:  # pragma: no cover
+    import cupy as cp
+except ModuleNotFoundError:  # pragma: no cover
+    import numpy as cp
+import numpy as np
 
 
 def _setup_loguru(log_level, outpath):
@@ -55,20 +60,32 @@ def logit(func):
             common = CommonArgs()
             args = args + (common,)
         _setup_loguru(common.loglevel, common.outpath)
-        logger.info(f"=== Run started @ {datetime.datetime.utcnow().isoformat()} ===")
+        logger.info(
+            f"=== Run started @ {datetime.datetime.now(datetime.UTC).isoformat()} ==="
+        )
         value = func(*args, **kwargs)
-        logger.info(f"=== Run ended  @ {datetime.datetime.utcnow().isoformat()} ===")
+        logger.info(
+            f"=== Run ended  @ {datetime.datetime.now(datetime.UTC).isoformat()} ==="
+        )
         return value
 
     return wrapper_logit
 
 
-def check_files(files: list[Path]):
-    for f in files:
-        if f.exists() and f.is_file():
-            continue
-        return f"Cannot access {f}, aborting."
-    return None
+def get_cpu_image(img: cp.ndarray | np.ndarray) -> np.ndarray:  # pragma: no cover
+    if "cuda" in dir(cp):
+        return img.get()
+    else:
+        return img
+
+
+def get_gpu_image_maybe(
+    img: np.ndarray, dtype=np.float32
+) -> cp.ndarray:  # pragma: no cover
+    if "cuda" in dir(cp):
+        return cp.asarray(img, dtype)
+    else:
+        return img
 
 
 def _pbar_listener(q, total, disable, unit, desc):
@@ -96,7 +113,7 @@ def abort(pool=None, log_queue=None, listener=None):
             # this lets the producers drain their log queues
             time.sleep(0.1)
             print(
-                f"=== Run killed @ {datetime.datetime.utcnow().isoformat()} ===",
+                f"=== Run killed @ {datetime.datetime.now(datetime.UTC).isoformat()} ===",
                 file=sys.stderr,
             )
         if log_queue and listener:
@@ -112,7 +129,7 @@ def abort(pool=None, log_queue=None, listener=None):
 
 def load_csv(f: Path):
     data = []
-    if os.path.exists(f) and os.path.getsize(f) > 0:
+    try:
         with open(f, newline="") as csvfile:
             reader = csv.reader(csvfile, quoting=csv.QUOTE_NONNUMERIC)
             for row in reader:
@@ -121,7 +138,10 @@ def load_csv(f: Path):
                 # for idx in [4, 5, 6, 7]:
                 for idx in [4, 5]:
                     row[idx] = int(row[idx]) if row[idx] else ""
+                row[2] = row[2] if row[2] else 0
                 data.append([tuple(row)])
+    except (OSError, ValueError) as e:
+        logger.error(f"Unable to read results CSV {f}: {e}")
     return data
 
 
@@ -175,4 +195,4 @@ class CommonArgs:
 
     @cached_property
     def now(self) -> str:
-        return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H%M%SZ")
+        return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H%M%SZ")

@@ -42,9 +42,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: POSIX",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Multimedia :: Graphics",
     "Topic :: Multimedia :: Graphics :: Capture :: Scanners",
 ]
@@ -114,23 +114,24 @@ black = "^25.1.0"
 pre-commit = "^4.2.0"
 pytest = "^8.3.5"
 pytest-mock = "^3.14.0"
-pylint = ">=3.3.7,<4.0.0"
 ruff = "^0.11.8"
 coverage = "^7.8.0"
 
 [tool.coverage.run]
+dynamic_context = "none"
 branch = true
 concurrency = ["multiprocessing", "thread"]
 command_line = "--module pytest --verbose --exitfirst tests/"
 disable_warnings = ["module-not-imported", "no-data-collected", "module-not-measured"]
 parallel = true
-sigterm = true
+#sigterm = true
 # see https://github.com/nedbat/coveragepy/issues/1653
 omit = [ "hough/cudautils.py", "config.py", "config-3.py" ]
 
 [tool.coverage.paths]
 source = [
     "hough/",
+    "samples/",
 ]
 
 [tool.coverage.report]
@@ -143,6 +144,7 @@ exclude_lines = [
 ]
 # currently unused
 omit = [ "hough/cudautils.py" ]
+precision = 1
 
 
 

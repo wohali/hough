@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
       - name: Test
         run: poetry run coverage run
       - name: Combine coverage data
-        run: poetry run coverage combine --append
+        run: poetry run coverage combine --append . samples
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         env:
@@ -82,7 +82,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -110,7 +110,7 @@ jobs:
       - name: Test
         run: poetry run coverage run
       - name: Combine coverage data
-        run: poetry run coverage combine --append
+        run: poetry run coverage combine --append . samples
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         env:
@@ -121,7 +121,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -152,7 +152,7 @@ jobs:
           fsutil file createnew pytest.ini 0
           poetry run coverage run
       - name: Combine coverage data
-        run: poetry run coverage combine --append
+        run: poetry run coverage combine --append . samples
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         env:

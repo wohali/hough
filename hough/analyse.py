@@ -5,7 +5,7 @@ Worker functions for a parallelizable skew analyser.
 import bisect
 import csv
 import math
-import signal
+from enum import Enum
 from multiprocessing.pool import Pool
 from pathlib import Path
 
@@ -36,20 +36,26 @@ from skimage.draw import line_aa
 from skimage.transform import probabilistic_hough_line
 from tqdm import tqdm  # TODO: consider rich?
 
-from . import CommonArgs, abort, get_images, get_num_images
+from . import (
+    CommonArgs,
+    abort,
+    get_images,
+    get_num_images,
+    get_cpu_image,
+    get_gpu_image_maybe,
+)
 
 
 # TODO: configfile out all magic numbers, including windowsize
 # TODO: class?
 
+Orientation = Enum("Orientation", "HORIZONTAL,VERTICAL")
+
 
 # hough's little helpers
-def _grey(x):
-    return 0.3 if x else 0.0
+def _greyf(arr):
+    return (arr > 0.3) * 0.3
 
-
-# vectorize applies JIT compiler to the given function
-_greyf = cp.vectorize(_grey)
 
 # CuPy scalars are actually GPU-resident zero-dimensional arrays, so we use numpy here instead
 hough_prec = np.deg2rad(0.02)
@@ -62,27 +68,27 @@ hough_theta_v = np.arange(
 hough_theta_hv = np.concatenate((hough_theta_v, hough_theta_h))
 
 
-def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
+def _hough_angles(pos, neg, orientation=Orientation.HORIZONTAL, thresh=(None, None)):
     height, width = pos.shape
-    if orientation == "H":
+    if orientation == Orientation.HORIZONTAL:
         axis = 1
         theta = hough_theta_h
         fp = cp.ones((51, 1), dtype=np.float32)
         margin = int(width * 0.975)
-    elif orientation == "V":
+    elif orientation == Orientation.VERTICAL:
         axis = 0
         theta = hough_theta_v
         fp = cp.ones((1, 51), dtype=np.float32)
         margin = int(height * 0.025)
-    else:
-        raise RuntimeError(f"Unknown orientation {orientation}!")
+    else:  # pragma: no cover
+        pass
     blur = ndi.median_filter(neg, footprint=fp, mode="reflect", cval=0.0)
     sums = cp.apply_along_axis(lambda a: a.sum(), axis, blur)
     line = sums.argmax(0)
     wsz = max(windowsize, margin)
 
     # Grab a +/- WINDOW-SIZE strip for evaluation. We've already cropped out the margins.
-    if orientation == "H":
+    if orientation == Orientation.HORIZONTAL:
         cropped = pos[max(line - wsz, 0) : min(line + wsz, height)]  # noqa: E203
     else:
         cropped = pos[
@@ -108,14 +114,9 @@ def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
     )
 
     line_length = int(height * 0.25)
-    if "cuda" in dir(cp):
-        lines = probabilistic_hough_line(
-            cp.asnumpy(edges), line_length=line_length, line_gap=2, theta=theta
-        )
-    else:
-        lines = probabilistic_hough_line(
-            edges, line_length=line_length, line_gap=2, theta=theta
-        )
+    lines = probabilistic_hough_line(
+        get_cpu_image(edges), line_length=line_length, line_gap=2, theta=theta
+    )
 
     # TODO: try OpenCV HoughLinesP
     # img_cv2 = cv_cuda_gpumat_from_cp_array(edges_u8)
@@ -134,7 +135,7 @@ def _hough_angles(pos, neg, orientation="H", thresh=(None, None)):
     angles = []
     for (x0, y0), (x1, y1) in lines:
         # Ensure line is moving rightwards/upwards
-        if orientation == "H":
+        if orientation == Orientation.HORIZONTAL:
             k = 1 if x1 > x0 else -1
             offset = 0
         else:
@@ -163,12 +164,9 @@ def analyse_image(
     ],
 ):
     """Analyses an image for deskewing, potentially using a CUDA backend."""
-    if "cuda" in dir(cp):
+    if "cuda" in dir(cp):  # pragma: no cover
         cp.cuda.set_pinned_memory_allocator(None)
-        # This copies the image to the GPU
-        page = cp.asarray(image[3], dtype=np.float32)
-    else:
-        page = image[3]
+    page = get_gpu_image_maybe(image[3])
 
     f = image[0]
     filename = f.name
@@ -180,7 +178,8 @@ def analyse_image(
 
     if page.ndim > 2:
         logger.debug(f"{filename} p{pagenum} - multichannel, converting to greyscale")
-        page = rgb2gray(page)
+        # discard any alpha channel
+        page = rgb2gray(page[:, :, :3])
     pageh, pagew = page.shape
 
     # Remove the margins, which are often dirty due to skewing
@@ -195,39 +194,48 @@ def analyse_image(
     p = np.clip(pos, 0, thr)
     neg = thr - p
     if common.debug:
+        dimg = get_cpu_image(neg)
         iio.imwrite(
             f"{common.debugpath}/{filename}_{pagenum}_neg.tiff",
-            neg.get(),
+            dimg,
         )
 
     # TODO: sanity check, _hough_angles should be under 100? 500?
-    h_angles, h_edges = _hough_angles(pos, neg, "H")
-    v_angles, v_edges = _hough_angles(pos, neg, "V")
+    h_angles, h_edges = _hough_angles(pos, neg, Orientation.HORIZONTAL)
+    v_angles, v_edges = _hough_angles(pos, neg, Orientation.VERTICAL)
     angles = h_angles + v_angles
 
     if len(angles) == 0:
         logger.debug(f"{filename} p{pagenum} - no lines found, changing threshold")
         if common.debug:
+            dhedges = get_cpu_image(img_as_ubyte(_greyf(h_edges)))
+            dvedges = get_cpu_image(img_as_ubyte(_greyf(v_edges)))
             iio.imwrite(
                 f"{common.debugpath}/{filename}_{pagenum}_no_hlines.png",
-                img_as_ubyte(_greyf(h_edges)).get(),
+                dhedges,
             )
             iio.imwrite(
                 f"{common.debugpath}/{filename}_{pagenum}_no_vlines.png",
-                img_as_ubyte(_greyf(v_edges)).get(),
+                dvedges,
             )
-        h_angles, h_edges = _hough_angles(pos, neg, "H", thresh=(100, 255))
-        v_angles, v_edges = _hough_angles(pos, neg, "V", thresh=(100, 255))
+        h_angles, h_edges = _hough_angles(
+            pos, neg, Orientation.HORIZONTAL, thresh=(100, 255)
+        )
+        v_angles, v_edges = _hough_angles(
+            pos, neg, Orientation.VERTICAL, thresh=(100, 255)
+        )
         angles = h_angles + v_angles
     else:
         if common.debug:
+            dhedges = get_cpu_image(h_edges)
+            dvedges = get_cpu_image(v_edges)
             iio.imwrite(
                 f"{common.debugpath}/{filename}_{pagenum}_simple_dilation_h_edges.png",
-                h_edges.get(),
+                dhedges,
             )
             iio.imwrite(
                 f"{common.debugpath}/{filename}_{pagenum}_simple_dilation_v_edges.png",
-                v_edges.get(),
+                dvedges,
             )
 
     if len(angles) > 0:
@@ -241,7 +249,7 @@ def analyse_image(
             for result in angles:
                 orn, _, x0, y0, x1, y1 = result
                 rr, cc, val = line_aa(c0=x0, r0=y0, c1=x1, r1=y1)
-                if orn == "H":
+                if orn == Orientation.HORIZONTAL:
                     hs += 1
                     for k, v in enumerate(val):
                         h_edges_grey[rr[k], cc[k]] = (1 - v) * h_edges_grey[
@@ -254,15 +262,11 @@ def analyse_image(
                             rr[k], cc[k]
                         ] + v
             if hs > 0:
-                iio.imwrite(
-                    f"{common.debugpath}/{filename}_{pagenum}_hlines.png",
-                    img_as_ubyte(h_edges_grey).get(),
-                )
+                dhg = get_cpu_image(img_as_ubyte(h_edges_grey))
+                iio.imwrite(f"{common.debugpath}/{filename}_{pagenum}_hlines.png", dhg)
             if vs > 0:
-                iio.imwrite(
-                    f"{common.debugpath}/{filename}_{pagenum}_vlines.png",
-                    img_as_ubyte(v_edges_grey).get(),
-                )
+                vhg = get_cpu_image(img_as_ubyte(v_edges_grey))
+                iio.imwrite(f"{common.debugpath}/{filename}_{pagenum}_vlines.png", vhg)
         # end if common.debug
         angles = [x[1] for x in angles]
 
@@ -294,27 +298,20 @@ def analyse_image(
         if common.debug:
             edges_grey = _greyf(edges)
 
-        if "cuda" in dir(cp):
-            lines = probabilistic_hough_line(
-                cp.asnumpy(edges),
-                line_length=int(pageh * 0.04),
-                line_gap=6,
-                theta=hough_theta_hv,
-            )
-        else:
-            lines = probabilistic_hough_line(
-                edges,
-                line_length=int(pageh * 0.04),
-                line_gap=6,
-                theta=hough_theta_hv,
-            )
+        npedges = get_cpu_image(edges)
+        lines = probabilistic_hough_line(
+            npedges,
+            line_length=int(pageh * 0.04),
+            line_gap=6,
+            theta=hough_theta_hv,
+        )
 
         for (x_0, y_0), (x_1, y_1) in lines:
             if abs(x_1 - x_0) > abs(y_1 - y_0):
                 # angle is <= π/4 from horizontal or vertical
-                _, x0, y0, x1, y1 = "H", x_0, y_0, x_1, y_1
+                _, x0, y0, x1, y1 = Orientation.HORIZONTAL, x_0, y_0, x_1, y_1
             else:
-                _, x0, y0, x1, y1 = "V", y_0, -x_0, y_1, -x_1
+                _, x0, y0, x1, y1 = Orientation.VERTICAL, y_0, -x_0, y_1, -x_1
             # flip angle so that X delta is positive (East quadrants).
             k = 1 if x1 > x0 else -1
             a = np.rad2deg(math.atan2(k * (y1 - y0), k * (x1 - x0)))
@@ -334,29 +331,30 @@ def analyse_image(
                 f"{filename} p{pagenum} - dilated Hough angle median: {angle}°"
             )
             if common.debug:
+                dd = get_cpu_image(img_as_bool(dilated))
+                deg = get_cpu_image(img_as_ubyte(edges_grey))
                 iio.imwrite(
                     f"{common.debugpath}/{filename}_{pagenum}_dilated.png",
-                    img_as_bool(dilated).get(),
+                    dd,
                 )
                 iio.imwrite(
                     f"{common.debugpath}/{filename}_{pagenum}_{angle}_lines.png",
-                    img_as_ubyte(edges_grey).get(),
+                    deg,
                 )
         else:
             angle = None
             logger.debug(f"{filename} p{pagenum} - Failed dilated Hough, giving up")
             if common.debug:
-                iio.imwrite(
-                    f"{common.debugpath}/{filename}_{pagenum}_dilated.png",
-                    img_as_bool(dilated).get(),
-                )
+                dd = get_cpu_image(img_as_bool(dilated))
+                deg = get_cpu_image(img_as_ubyte(edges_grey))
+                de = get_cpu_image(img_as_bool(edges))
+                iio.imwrite(f"{common.debugpath}/{filename}_{pagenum}_dilated.png", dd)
                 iio.imwrite(
                     f"{common.debugpath}/{filename}_{pagenum}_dilate_edges_grey.png",
-                    img_as_ubyte(edges_grey).get(),
+                    deg,
                 )
                 iio.imwrite(
-                    f"{common.debugpath}/{filename}_{pagenum}_dilate_edges.png",
-                    img_as_bool(edges).get(),
+                    f"{common.debugpath}/{filename}_{pagenum}_dilate_edges.png", de
                 )
 
     return (
@@ -371,7 +369,7 @@ def analyse_image(
 
 # NOTE: _init_worker must be in the same module as analyse_files (i.e. the call to the initializer), not sure why
 def _init_worker(common_arg: CommonArgs):
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    #    signal.signal(signal.SIGINT, signal.SIG_IGN)
     global common, logger
     common = common_arg
     logger = common_arg.logger
@@ -407,6 +405,10 @@ def analyse_files(files: list[Path], common: CommonArgs) -> Path:
             print("Caught KeyboardInterrupt, terminating workers...", file=sys.stderr)
             abort(p)
             return None
+        finally:
+            # https://coverage.readthedocs.io/en/7.8.0/subprocess.html#using-multiprocessing
+            p.close()
+            p.join()
 
     # TODO: don't clobber existing results file?
     resultspath = Path(common.outpath, "results.csv")
