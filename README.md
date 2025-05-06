@@ -4,9 +4,9 @@
 <a href="https://github.com/wohali/hough/actions"><img alt="Actions Status" src="https://github.com/wohali/hough/workflows/Tests/badge.svg"></a>
 <a href="https://pypi.org/project/hough/"><img alt="PyPI" src="https://img.shields.io/pypi/v/hough"></a>
 <a href="https://pypi.org/project/hough/"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/hough"></a>
-<a href="https://github.com/wohali/hough/blob/master/COPYING"><img src="https://img.shields.io/github/license/wohali/hough.svg" alt="GPL v2.0 License" /></a>
+<a href="https://github.com/wohali/hough/blob/main/COPYING"><img src="https://img.shields.io/github/license/wohali/hough.svg" alt="GPL v2.0 License" /></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://codecov.io/gh/wohali/hough"><img alt="Coverage stats" src="https://codecov.io/gh/wohali/hough/branch/master/graph/badge.svg" /></a>
+<a href="https://codecov.io/gh/wohali/hough"><img alt="Coverage stats" src="https://codecov.io/gh/wohali/hough/branch/main/graph/badge.svg" /></a>
 </p>
 
 _Hough_ finds skew angles in scanned document pages, using the Hough transform.
