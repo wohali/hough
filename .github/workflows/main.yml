@@ -72,6 +72,8 @@ jobs:
         run: poetry run coverage run
       - name: Combine coverage data
         run: poetry run coverage combine --append . samples
+      - name: Generate coverage xml report
+        run: poetry run coverage xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         env:
@@ -111,6 +113,8 @@ jobs:
         run: poetry run coverage run
       - name: Combine coverage data
         run: poetry run coverage combine --append . samples
+      - name: Generate coverage xml report
+        run: poetry run coverage xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         env:
@@ -153,6 +157,8 @@ jobs:
           poetry run coverage run
       - name: Combine coverage data
         run: poetry run coverage combine --append . samples
+      - name: Generate coverage xml report
+        run: poetry run coverage xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         env:
