@@ -15,8 +15,7 @@ def _do_histogram(results: Path):
     res = []
     for r in data:
         for image in r:
-            if type(image[2]) is float:
-                res.append(abs(image[2]))
+            res.append(abs(image[2]))
     if not res:
         print("\nNo angles found, so no histogram.")
         return

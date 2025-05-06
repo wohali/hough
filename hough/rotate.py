@@ -9,12 +9,12 @@ from pathlib import Path
 
 from loguru import logger
 
-from . import start_pbar
+from . import start_pbar, get_cpu_image, get_gpu_image_maybe
 
-try:
+try:  # pragma: no cover
     import cupy as cp
     import cupyx.scipy.ndimage as ndi
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     import numpy as cp
     import scipy.ndimage as ndi
 
@@ -22,19 +22,15 @@ import filetype
 import fitz
 import imageio.v3 as iio
 import numpy as np
-from tqdm import tqdm
 
 from .utils import CommonArgs, abort, load_csv
 
 
 # TODO: provide order override?
 def rotate_ndarray(cpuimg: np.ndarray, angle: float, order=0) -> np.ndarray:
-    if "cuda" in dir(cp):
-        img = cp.asarray(cpuimg, dtype=cp.uint8)
-        fixed = ndi.rotate(img, -angle, mode="nearest", reshape=False, order=order)
-        return fixed.get()
-    else:
-        return ndi.rotate(cpuimg, -angle, mode="nearest", reshape=False, order=order)
+    gpuimg = get_gpu_image_maybe(cpuimg, dtype=cp.uint8)
+    rotatedimg = ndi.rotate(gpuimg, -angle, mode="nearest", reshape=False, order=order)
+    return get_cpu_image(rotatedimg)
 
 
 def rotate(imagelist: list[tuple]) -> int:
@@ -54,6 +50,8 @@ def rotate(imagelist: list[tuple]) -> int:
     for image in imagelist:
         page = int(image[1]) if image[1] else ""
         angle = float(image[2]) if image[2] else 0.0
+        if angle == 0.0:
+            continue
         if not page:
             # single-image file, not a container
             logger.info(f"Rotating {filename}...")
@@ -116,12 +114,6 @@ def _init_rotator(common_arg: CommonArgs, q: Queue):
     queue = q
 
 
-def pbar_listener(q, total, disable, unit, desc):
-    pbar = tqdm(total=total, disable=disable, unit=unit, desc=desc)
-    for item in iter(q.get, None):
-        pbar.update()
-
-
 def rotate_files(resultsfile: Path, common: CommonArgs) -> int:
     """Rotate all of the files mentioned in the results.csv resultsfile."""
     # TODO: further parallelise this by splitting multi-image files first?
@@ -158,6 +150,9 @@ def rotate_files(resultsfile: Path, common: CommonArgs) -> int:
                 p.imap_unordered(rotate, sortedresults, min(common.workers, 8))
             ):
                 pass
+            # see https://coverage.readthedocs.io/en/7.8.0/subprocess.html#using-multiprocessing
+            p.close()
+            p.join()
         q.put(None)
         proc.join()
         return 0
