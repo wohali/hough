@@ -28,7 +28,7 @@
 
 [tool.poetry]
 name = "hough"
-version = "0.3.0.dev1"
+version = "0.3.0"
 description = "Skew detection and correction in scanned images."
 authors = ["Joan Touzet <wohali@apache.org>", "qu1j0t3 <support@telegraphics.com.au>"]
 maintainers = ["Joan Touzet <wohali@apache.org>"]
@@ -87,6 +87,10 @@ cuda = [
 #    "torchvision (>=0.22.0+cu128)",
 #   "opencv-python",     # pre-built wheels a pain here.
 ]
+
+[tool.poetry.requires-plugins]
+# causes issues in GH Windows builds :(
+#poethepoet = { version = "~0.34.0", extras = ["poetry_plugin"]}
 
 [tool.poetry.dependencies]
 #torch = [
@@ -188,6 +192,15 @@ ignore = ["E203", "E501"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
+
+[tool.poe.tasks]
+distclean = "rm -rf /.coverage ./htmlcov ./**/*.pyc ./**/__pycache__ ./**/*~"
+clean = "rm -rf /.coverage ./htmlcov ./**/*.pyc ./**/__pycache__"
+cov-run = "coverage run"
+cov-combine = "coverage combine --append . samples"
+cov-html = "coverage html"
+test = ["clean", "cov-run", "cov-combine", "cov-html"]
+
 
 [build-system]
 requires = ["poetry>=2.0.0"]

@@ -145,9 +145,14 @@ def load_csv(f: Path):
     return data
 
 
-@Parameter(
-    name="*", negative=()
-)  # flattens namespace so --analyse.debug becomes --debug
+def validate_common(type_, value):
+    if value and value.debug:
+        # this will raise ValueError if there is an issue
+        _ = value.debugpath
+
+
+# name="*" flattens namespace so --analyse.debug becomes --debug
+@Parameter(name="*", negative=(), validator=validate_common)
 @dataclass
 class CommonArgs:
     debug: bool = False
@@ -180,7 +185,7 @@ class CommonArgs:
             try:
                 p.mkdir(parents=True, exist_ok=True)
             except (FileExistsError, FileNotFoundError):
-                raise ValueError(f"Unable to create output directory f{p}")
+                raise ValueError(f"Unable to create output directory {p}")
         return p
 
     @cached_property
@@ -190,7 +195,7 @@ class CommonArgs:
             try:
                 p.mkdir(parents=True, exist_ok=True)
             except (FileExistsError, FileNotFoundError):
-                raise ValueError(f"Unable to create output directory f{p}")
+                raise ValueError(f"Unable to create debug directory {p}")
         return p
 
     @cached_property
