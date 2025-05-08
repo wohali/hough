@@ -83,7 +83,7 @@ def analyse(
 
 
 @app.command()
-# no @logit
+# no @logit - never log this one
 def histogram(
     results: ExistingFile,
 ) -> int:

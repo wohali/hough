@@ -59,7 +59,15 @@ def logit(func):
         else:
             common = CommonArgs()
             args = args + (common,)
-        _setup_loguru(common.loglevel, common.outpath)
+        try:
+            _setup_loguru(common.loglevel, common.outpath)
+        except ValueError:
+            print(
+                "Unable to create output directory or logfile! Aborting.",
+                file=sys.stderr,
+            )
+            exit(1)
+
         logger.info(
             f"=== Run started @ {datetime.datetime.now(datetime.UTC).isoformat()} ==="
         )
