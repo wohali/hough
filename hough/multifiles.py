@@ -17,13 +17,27 @@ def get_pages(
     """Returns the pages in the file, as a list of tuples of the form:
     [(filename, "mime/type", pagenum), ... ]
     """
-    try:
-        kind = filetype.guess(f)
-    except (FileNotFoundError, IsADirectoryError):
-        return []
+    kind = filetype.guess(f)
+    if not kind:
+        # assume single-image file
+        return [(f, kind.mime, None)]
     if kind.mime == "application/pdf":
         pdf = pymupdf.open(f)
         return [(f, kind.mime, x) for x in range(len(pdf))]
+    elif kind.mime == "image/tiff":
+        # at least 2 ways this could be a multi-image
+        # ignoring volumetric tiffs for now
+        # first try the simple way
+        props = iio.improps(f, index=...)
+        if props.n_images > 1:
+            # retrieve with iio.imread(f, index=n)
+            return [(f, kind.mime, x) for x in range(props.n_images)]
+        elif props.is_batch:
+            # degenerate scum. sadly, this requires reading the entire thing in
+            count = iio.imread(f).shape[0]
+            return [(f, "image/tiff-batch", x) for x in range(count)]
+        else:
+            return [(f, kind.mime, None)]
     # TODO: Add support for multi-page TIFFs here via
     #   https://imageio.readthedocs.io/en/stable/reference/userapi.html#reading-images
     #   https://imageio.readthedocs.io/en/stable/userapi.html#imageio.mimread
@@ -43,6 +57,18 @@ def get_num_images(files: list[Path]) -> int:
             pdf = pymupdf.open(f)
             for page in pdf.pages():
                 for image in page.get_images():
+                    ctr += 1
+        elif kind.mime == "image/tiff":
+            props = iio.improps(f, index=...)
+            if props.n_images > 1:
+                ctr += props.n_images
+            else:
+                img = iio.imread(f)
+                if len(img.shape) == 3:
+                    # batch-style, indexed from zero
+                    ctr += img.shape[0] + 1
+                else:
+                    # assume single-image tiff
                     ctr += 1
         else:
             ctr += 1
@@ -83,7 +109,31 @@ def get_images(
                         (d["xres"], d["yres"]),
                         iio.imread(d["image"]),
                     )
-        # TODO: add support for multi-page TIFFs here
+        elif kind and kind.mime == "image/tiff":
+            logger.info(f"Reading TIFF {f}...")
+            # at least 2 ways this could be a multi-image
+            # (ignoring volumetric tiffs for now)
+            # first try the simple way
+            props = iio.improps(f, index=...)
+            if props.n_images > 1:
+                # retrieve with iio.imread(f, index=n)
+                logger.info(f"TIFF {f} is multi-image ({props.n_images} images)...")
+                for n in range(props.n_images):
+                    logger.info(f"Reading TIFF {f} image {n}...")
+                    img = iio.imread(f, index=n)
+                    yield (f, (n + 1, 0), img.shape, img)
+            else:
+                # batch marker is not indicative; guess based on dimensions
+                logger.info(f"Reading possibly batch-style TIFF {f}...")
+                img = iio.imread(f)
+                if len(img.shape) == 3:
+                    # degenerate scum. sadly, this requires reading the entire thing in
+                    logger.info(f"Batch-style TIFF {f} has {img.shape[0]} images.")
+                    for n in range(img.shape[0]):
+                        yield (f, (n + 1, 0), img[n].shape, img[n])
+                else:
+                    # assume single-image tiff
+                    yield (f, None, None, iio.imread(f))
         else:
             try:
                 logger.info(f"Reading {f}...")
