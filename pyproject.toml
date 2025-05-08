@@ -73,6 +73,8 @@ dependencies = [
     "cyclopts (>=3.14.1,<4.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
 #    "opencv-python (>=4.11.0.86) ; extra != 'cuda'",
+"imagecodecs (>=2025.3.30,<2026.0.0)",
+"tifffile (>=2025.3.30,<2026.0.0)"
 ]
 
 [project.scripts]
@@ -194,8 +196,8 @@ ignore = ["E203", "E501"]
 lines-after-imports = 2
 
 [tool.poe.tasks]
-distclean = "rm -rf /.coverage ./htmlcov ./**/*.pyc ./**/__pycache__ ./**/*~"
-clean = "rm -rf /.coverage ./htmlcov ./**/*.pyc ./**/__pycache__"
+distclean = "rm -rf ./.coverage ./htmlcov ./**/*.pyc ./**/__pycache__ ./**/*~ ./hough.egg-info ./in ./dist"
+clean = "rm -rf ./.coverage ./htmlcov ./**/*.pyc ./**/__pycache__"
 cov-run = "coverage run"
 cov-combine = "coverage combine --append . samples"
 cov-html = "coverage html"
