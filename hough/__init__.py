@@ -1,6 +1,6 @@
 from importlib import metadata
 
-import toml
+import tomllib
 
 from .utils import (
     CommonArgs,
@@ -21,7 +21,8 @@ from .main import main
 try:
     __version__ = metadata.version(__package__)
 except metadata.PackageNotFoundError:  # pragma: no cover
-    __version__ = toml.load("pyproject.toml")["tool"]["poetry"]["version"] + "dev"
+    with open("pyproject.toml", "rb") as f:
+        __version__ = tomllib.load(f)["tool"]["poetry"]["version"] + "dev"
 
 __all__ = [
     "CommonArgs",
