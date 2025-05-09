@@ -1,0 +1,40 @@
+name: Build and publish python package
+
+on:
+  release:
+    types: [ published ]
+
+permissions:
+  contents: read
+
+jobs:
+  pypi-publish:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/hough/
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python - -y
+      - name: Update PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Update Poetry configuration
+        run: poetry config virtualenvs.create false
+      - name: Install dependencies
+        run: poetry sync --no-interaction
+      - name: Package project
+        run: poetry build
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
