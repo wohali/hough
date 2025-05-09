@@ -3,7 +3,7 @@
 # vim: ts=4:sw=4:et:tw=88:nowrap
 
 #    This file is part of hough, an image deskewing tool
-#    Copyright © 2016-2020 Toby Thain <toby@telegraphics.com.au>
+#    Copyright © 2016-2020 Toby Thain <toby@telegraphics.net>
 #    Copyright © 2020-2025 Joan Touzet <joant@atypical.net>
 #
 #    This program is free software; you can redistribute it and/or modify

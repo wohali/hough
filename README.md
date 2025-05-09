@@ -137,7 +137,7 @@ Analyse one or more files for deskewing.
 
 # Examples
 
-Just about all of [these files](https://web.archive.org/web/20231024133854/http://docs.telegraphics.com.au/) have been
+Just about all of [these files](https://docs.telegraphics.net/) have been
 deskewed this way.
 
 # Getting the best results
@@ -206,7 +206,7 @@ poetry poe test
 
 ```
 This file is part of "hough", which detects skew angles in scanned images
-Copyright (C) 2016-2020 Toby Thain <toby@telegraphics.com.au>
+Copyright (C) 2016-2020 Toby Thain <toby@telegraphics.net>
 Copyright (C) 2020-2025 Joan Touzet <wohali@apache.org>
 
 This program is free software; you can redistribute it and/or modify

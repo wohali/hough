@@ -30,7 +30,7 @@
 name = "hough"
 version = "0.3.1"
 description = "Skew detection and correction in scanned images."
-authors = ["Joan Touzet <wohali@apache.org>", "qu1j0t3 <support@telegraphics.com.au>"]
+authors = ["Joan Touzet <wohali@apache.org>", "Toby Thain <support@telegraphics.net>"]
 maintainers = ["Joan Touzet <wohali@apache.org>"]
 repository = "https://github.com/wohali/hough"
 keywords = ["hough", "scan", "rotate", "deskew"]
