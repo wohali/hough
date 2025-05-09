@@ -11,48 +11,48 @@
 
 _Hough_ finds skew angles in scanned document pages, using the Hough transform.
 
-It is oriented to batch processing, and can make use of multiple cores. (You'll
-want this - analysis and image processing is very CPU intensive!)
+It is oriented to batch processing, and can make use of multiple cores or an
+optional CUDA backend. (It can be very compute intensive!)
 
 # Installation and usage
 
 ## Installation
 
 ```
-pip install -U pip
-pip install hough
+pipx install hough
 ```
 
-The first line is required to update `pip` to a new enough version to be
-compatible with `manylinux` wheel packaging, required for PyMuPDF.
+Or, if you have a supported GPU and have [installed CUDA](https://developer.nvidia.com/cuda-toolkit) (currently 12.x supported):
 
-Older versions of `pip` are fine, but you'll have to install MuPDF, its
-headers, and a compiler first, so PyMuPDF can be compiled locally.
+```
+pipx install "hough[cuda]"
+```
+
+If you don't use `pipx`, other methods such as `pip` should work fine, just create a virtual environment first.
 
 ## Usage
 
 To get started right away, here's some examples.
 
-Generate angles (in CSV form) for a bunch of TIFF page images, one page per file:
+Generate angles (in CSV form) for a bunch of TIFF images:
 
 ```
-hough --csv in/*.tif
+hough analyse in/*.tif
 ```
 
 The same, but for a PDF file, and display a histogram at the end:
 
 ```
-hough --histogram Able_Attach_Sep83.pdf
+hough analyse --histogram Able_Attach_Sep83.pdf
 ```
 
-The same, but show progress while running:
+The same, but show more information while running:
 
 ```
-hough -v --histogram Able_Attach_Sep83.pdf
+hough --verbose --histogram Able_Attach_Sep83.pdf
 ```
 
-
-The deskewing results are placed in the `results.csv` file. Example:
+The deskewing results are placed in a `results.csv` file created under the `out/<timestamp>` directory, which is created at invocation time. Here's an example:
 
 ```csv
 "Input File","Page Number","Computed angle","Variance of computed angles","Image width (px)","Image height (px)"
@@ -101,41 +101,43 @@ Samples: 195
 You can list them by running `hough --help`:
 
 ```
-hough - straighten scanned pages using the Hough transform.
+Usage: hough COMMAND
 
-Usage:
-  hough (-h | --help)
-  hough [options] [FILE] ...
-  hough [options] [--results=<file>] [FILE] ...
-  hough (-r | --rotate) [options] [--results=<file>]
-  hough (-r | --rotate) [options] [--results=<file>] [FILE] ...
-
-Arguments:
-  FILE                          input files to analyze/rotate
-
-Options:
-  -h --help                     display this help and exit
-  --version                     display the version number and exit
-  -v --verbose                  print status messages
-  -d --debug                    retain debug image output in debug/ dir
-                                (also enables --verbose)
-  --histogram                   display rotation angle histogram summary
-  -o DIR, --out=DIR             store output results/images in named
-                                directory. Directory is created if it
-                                does not exist [default: out/TIMESTAMP]
-  --results=<file>              save results in FILE under output path,
-                                or specify path to results file for
-                                rotation [default: results.csv]
-  -w <workers> --workers=<#>    specify the number of workers to run
-                                simultaneously. Default: total # of CPUs
-  -r --rotate                   rotates the files passed on the command
-                                line, or if none given, those listed
-                                in the results file.
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────╮
+│ analyse    Analyse one or more files for deskewing.                                    │
+│ histogram  Show a histogram of rotation angles from a previous analysis.               │
+│ process    Fully analyse and rotate one or more files.                                 │
+│ rotate     Rotate one or more files that have previously been analysed.                │
+│ --help -h  Display this message and exit.                                              │
+│ --version  Display application version.                                                │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
 ```
+
+Or ask for help for a specific command, *e.g.* `hough analyse --help`:
+
+```
+Usage: hough analyse [ARGS] [OPTIONS]
+
+Analyse one or more files for deskewing.
+
+╭─ Parameters ───────────────────────────────────────────────────────────────────────────╮
+│ *  FILES --files          One or more files to analyse for deskewing. [required]       │
+│    DEBUG --debug          Save intermediate results in debug/ under out folder.        │
+│                           [default: False]                                             │
+│    VERBOSE --verbose      Print status messages instead of progress bar. [default:     │
+│                           False]                                                       │
+│    OUT --out              Use the specified path for results and post-rotated files.   │
+│                           [default: out/TIMESTAMP]                                     │
+│    WORKERS --workers      Number of workers to run simultaneously. [default: 4]        │
+│    HISTOGRAM --histogram  Display result summary as histogram after processing.        │
+│                           [default: False]                                             │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
 
 # Examples
 
-Just about all of [these files](http://docs.telegraphics.com.au/) have been
+Just about all of [these files](https://web.archive.org/web/20231024133854/http://docs.telegraphics.com.au/) have been
 deskewed this way.
 
 # Getting the best results
@@ -147,7 +149,7 @@ from your document scans:
 
 1. Bilevel (black-and-white) bitmaps will produce lower quality results.
    For best results, scan to greyscale or RGB first, deskew with _Hough_, then
-   reduce the colour depth to bilevel.
+   reduce the colour depth to bilevel if desired.
 1. Hough deskewing is an inexact process, with many heuristics discovered
    by trial and error. _Hough_ may not work well on your material without tuning
    and further modification. (We'd love your pull requests!)
@@ -156,7 +158,7 @@ from your document scans:
 
 You can spy on _Hough_'s attempts to perform deskewing by passing the `--debug`
 flag on the command line. The generated images, and any detected lines in them,
-are placed in the `debug/<datetime>/` directory.
+are placed in the `out/<timestamp>/debug/` directory.
 
 Note that _Hough_ cannot always determine a skew for a page (e.g. blank pages
 in particular), and will very occasionally get the skew wrong (depending on
@@ -189,16 +191,15 @@ You'll need to install [Poetry](https://python-poetry.org/docs/#installation),
 then run:
 
 ```
-poetry run pip install -U pip setuptools
-poetry install
-poetry shell
+poetry sync --with dev   # or --with dev,cuda if you have CUDA installed
+poetry self add 'poethepoet[poetry_plugin]' poetry-plugin-shell
 ```
 
-Do some work, then run the tests with
+Do some work, then run the pre-commit checks and tests with:
 
 ```
-pytest
-pre-commit run
+poetry run pre-commit
+poetry poe test
 ```
 
 # License notice
@@ -206,7 +207,7 @@ pre-commit run
 ```
 This file is part of "hough", which detects skew angles in scanned images
 Copyright (C) 2016-2020 Toby Thain <toby@telegraphics.com.au>
-Copyright (C) 2020 Joan Touzet <wohali@apache.org>
+Copyright (C) 2020-2025 Joan Touzet <wohali@apache.org>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
