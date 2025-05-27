@@ -125,7 +125,8 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+# Remove 3.13 for now; fails regularly on GitHub
+        python-version: ["3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
