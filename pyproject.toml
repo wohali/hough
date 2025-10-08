@@ -120,7 +120,7 @@ black = "^25.1.0"
 pre-commit = "^4.2.0"
 pytest = "^8.3.5"
 pytest-mock = "^3.14.0"
-ruff = ">=0.11.8,<0.13.0"
+ruff = ">=0.11.8,<0.15.0"
 coverage = "^7.8.0"
 
 [tool.coverage.run]
