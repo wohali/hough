@@ -43,14 +43,14 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 
 [[package]]
 name = "austin-python"
-version = "1.7.1"
+version = "2.1.2"
 description = "Python wrapper for Austin, the CPython frame stack sampler."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "austin_python-1.7.1-py3-none-any.whl", hash = "sha256:f9493ed0d95f10ee0ae1ea8bc17cabba4585fd0e73d28101f7f3c2fa48ceacb1"},
-    {file = "austin_python-1.7.1.tar.gz", hash = "sha256:c99a692feaf452a04e5b8cbb11b230fbb6294bb9229bcf7b493d650557236290"},
+    {file = "austin_python-2.1.2-py3-none-any.whl", hash = "sha256:cde022030f531b80d24f67ee583fb88cab983e91af03687f712dad968265acb8"},
+    {file = "austin_python-2.1.2.tar.gz", hash = "sha256:6821bfc8918a3bddb7be34f3c913e385333f53edf27e293232e33a5c6346ac59"},
 ]
 
 [package.dependencies]
@@ -1832,4 +1832,4 @@ cuda = ["cucim-cu12", "cupy-cuda12x", "optuna"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "42761b5ddb24c801e6582cee6829fccc830ccd31b8c327eeebad20fdaa2365ea"
+content-hash = "e046725df66ae7d6a1f862bc22bd8daae8f93540b25c6c3f2c4b477331940521"
