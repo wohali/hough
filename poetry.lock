@@ -43,14 +43,14 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 
 [[package]]
 name = "austin-python"
-version = "2.1.2"
+version = "2.2.0"
 description = "Python wrapper for Austin, the CPython frame stack sampler."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "austin_python-2.1.2-py3-none-any.whl", hash = "sha256:cde022030f531b80d24f67ee583fb88cab983e91af03687f712dad968265acb8"},
-    {file = "austin_python-2.1.2.tar.gz", hash = "sha256:6821bfc8918a3bddb7be34f3c913e385333f53edf27e293232e33a5c6346ac59"},
+    {file = "austin_python-2.2.0-py3-none-any.whl", hash = "sha256:7948bf14b61d452baba92b40900bc9fa0cadb2a1a1f99bb21d901e6c16ab9285"},
+    {file = "austin_python-2.2.0.tar.gz", hash = "sha256:c546f6c57410332b3734c2b96451c1fd409d883ddaeac39e085c497f6ff1e408"},
 ]
 
 [package.dependencies]
